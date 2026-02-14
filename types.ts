@@ -12,6 +12,13 @@ export enum Priority {
   NORMAL = 'Normal'
 }
 
+export enum WeekMode {
+  STANDARD = 'Standard',
+  LIGHT = 'Light',
+  CRUNCH = 'Crunch',
+  REVIEW = 'Review'
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -71,7 +78,7 @@ export interface AppState {
   isLoggedIn: boolean;
   hasSeenOnboarding: boolean;
   notificationsEnabled: boolean;
-  isDarkMode: boolean; // NEW
+  isDarkMode: boolean;
   language: Language;
   dailyAvailableMinutes: number;
   isSurvivalMode: boolean; 
@@ -79,6 +86,8 @@ export interface AppState {
   dailyIntention?: string;
   intentionDate?: string;
   categoryBias: Record<string, number>;
+  currentWeekMode: WeekMode; // NEW
+  weekStartDate?: string; // NEW
 }
 
 export interface Habit {

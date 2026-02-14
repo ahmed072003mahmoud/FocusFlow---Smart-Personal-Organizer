@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate, useLocation, Link, useNavigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
 import { AppProvider, useApp } from './AppContext';
 import { Icons } from './constants';
 
@@ -14,9 +14,18 @@ import AIPlanScreen from './views/AIPlanScreen';
 import StatsScreen from './views/StatsScreen';
 import SettingsScreen from './views/SettingsScreen';
 import ContentScreen from './views/ContentScreen';
-import BuddyScreen from './views/BuddyScreen';
 import ProfileScreen from './views/ProfileScreen';
 import BrainDumpScreen from './views/BrainDumpScreen';
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isLoggedIn, hasSeenOnboarding, isHydrated } = useApp();
+  
+  if (!isHydrated) return <SplashScreen />;
+  if (!isLoggedIn) return <Navigate to="/login" replace />;
+  if (!hasSeenOnboarding) return <Navigate to="/onboarding" replace />;
+  
+  return <>{children}</>;
+};
 
 const Sidebar: React.FC = () => {
   const { pathname } = useLocation();
@@ -25,7 +34,7 @@ const Sidebar: React.FC = () => {
   const navItems = [
     { path: '/dashboard', label: 'Home', icon: <Icons.Home /> },
     { path: '/habits', label: 'Habits', icon: <Icons.Tasks /> },
-    { path: '/brain-dump', label: 'Inbox', icon: <Icons.Inbox /> }, // NEW
+    { path: '/brain-dump', label: 'Inbox', icon: <Icons.Inbox /> },
     { path: '/ai-plan', label: 'AI Plan', icon: <Icons.AI /> },
     { path: '/stats', label: 'Stats', icon: <Icons.Stats /> },
     { path: '/content', label: 'Tips', icon: <Icons.Tips /> },
@@ -34,9 +43,7 @@ const Sidebar: React.FC = () => {
   return (
     <aside className="hidden md:flex flex-col w-72 bg-[#2B3A67] text-white h-screen sticky top-0 py-10 px-6 z-[70] shadow-2xl border-r border-white/5">
       <div className="flex items-center gap-4 px-2 mb-12">
-        <div className="w-12 h-12 bg-[#E63946] rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg shadow-[#E63946]/20">
-          F
-        </div>
+        <div className="w-12 h-12 bg-[#E63946] rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg">F</div>
         <span className="font-black tracking-tight text-2xl">FocusFlow</span>
       </div>
 
@@ -48,47 +55,27 @@ const Sidebar: React.FC = () => {
               key={item.path}
               to={item.path}
               className={`flex items-center gap-4 px-5 py-4 rounded-[20px] transition-all duration-300 ${
-                isActive 
-                  ? 'bg-[#E63946] text-white shadow-xl shadow-[#E63946]/20' 
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
+                isActive ? 'bg-[#E63946] text-white shadow-xl shadow-[#E63946]/20' : 'text-white/50 hover:text-white hover:bg-white/5'
               }`}
             >
-              <div className="transition-transform group-hover:scale-110">
-                {item.icon}
-              </div>
-              <span className="font-bold text-sm tracking-wide">
-                {item.label}
-              </span>
+              {item.icon}
+              <span className="font-bold text-sm tracking-wide">{item.label}</span>
             </Link>
           );
         })}
       </nav>
-
-      <div className="mt-auto pt-8 border-t border-white/10">
-        <Link to="/profile" className="flex items-center gap-4 px-4 py-4 hover:bg-white/5 rounded-3xl transition-all group">
-          <div className="w-12 h-12 bg-[#E63946] rounded-2xl flex items-center justify-center font-black text-white shadow-lg">
-            {userName?.charAt(0).toUpperCase() || 'U'}
-          </div>
-          <div className="overflow-hidden">
-            <p className="font-black truncate text-sm tracking-tight">{userName || 'Explorer'}</p>
-            <p className="text-[9px] text-white/40 uppercase font-black tracking-widest mt-0.5 group-hover:text-[#E63946] transition-colors">View Profile</p>
-          </div>
-        </Link>
-      </div>
     </aside>
   );
 };
 
 const BottomNav: React.FC = () => {
   const { pathname } = useLocation();
-  
   const navItems = [
     { path: '/dashboard', label: 'Home', icon: <Icons.Home /> },
     { path: '/habits', label: 'Habits', icon: <Icons.Tasks /> },
-    { path: '/brain-dump', label: 'Inbox', icon: <Icons.Inbox /> }, // NEW
+    { path: '/brain-dump', label: 'Inbox', icon: <Icons.Inbox /> },
     { path: '/ai-plan', label: 'AI Plan', icon: <Icons.AI /> },
     { path: '/stats', label: 'Stats', icon: <Icons.Stats /> },
-    { path: '/content', label: 'Tips', icon: <Icons.Tips /> },
   ];
 
   return (
@@ -99,16 +86,9 @@ const BottomNav: React.FC = () => {
           <Link
             key={item.path}
             to={item.path}
-            className={`flex flex-col items-center gap-1 transition-all duration-300 ${
-              isActive ? 'text-[#E63946] scale-110' : 'text-slate-400 hover:text-slate-600'
-            }`}
+            className={`flex flex-col items-center gap-1 transition-all duration-300 ${isActive ? 'text-[#E63946]' : 'text-slate-400'}`}
           >
-            <div className={`p-2 rounded-2xl transition-all ${isActive ? 'bg-[#E63946]/10' : 'bg-transparent'}`}>
-              {item.icon}
-            </div>
-            <span className={`text-[8px] font-bold uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
-              {item.label}
-            </span>
+            <div className={`p-2 rounded-2xl ${isActive ? 'bg-[#E63946]/10' : ''}`}>{item.icon}</div>
           </Link>
         );
       })}
@@ -119,42 +99,22 @@ const BottomNav: React.FC = () => {
 const MainScaffold: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { progress, language } = useApp();
   const { pathname } = useLocation();
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 800);
-
-  useEffect(() => {
-    const handleResize = () => setIsDesktop(window.innerWidth >= 800);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
+  const isDesktop = window.innerWidth >= 800;
   const showNav = ['/dashboard', '/habits', '/ai-plan', '/stats', '/content', '/brain-dump'].includes(pathname);
   const isRtl = language === 'ar';
 
   return (
-    <div 
-      className={`flex h-screen bg-[#F1FAEE] overflow-hidden transition-all duration-500`} 
-      dir={isRtl ? 'rtl' : 'ltr'}
-    >
+    <div className="flex h-screen bg-[#F8F9FA] overflow-hidden" dir={isRtl ? 'rtl' : 'ltr'}>
       {isDesktop && showNav && <Sidebar />}
-
-      <div className={`flex-1 flex flex-col h-full relative overflow-hidden ${!isDesktop ? 'max-w-md mx-auto shadow-2xl bg-[#F1FAEE] border-x border-slate-100' : 'bg-slate-50/30'}`}>
+      <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-slate-50/30">
         {showNav && (
-          <div className="absolute top-0 left-0 right-0 z-[60]">
-            <div className="h-1 bg-white/20 w-full">
-              <div 
-                className="h-full bg-[#E63946] transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(230,57,70,0.5)]" 
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+          <div className="absolute top-0 left-0 right-0 z-[60] h-1 bg-[#E63946]/10">
+            <div className="h-full bg-[#E63946] transition-all duration-1000" style={{ width: `${progress}%` }} />
           </div>
         )}
-
         <main className={`flex-1 overflow-y-auto no-scrollbar ${!isDesktop && showNav ? 'pb-32' : ''}`}>
-           <div className={isDesktop && showNav ? "max-w-[1000px] mx-auto w-full px-8 pb-12" : ""}>
-            {children}
-           </div>
+           <div className={isDesktop && showNav ? "max-w-[1000px] mx-auto w-full px-8 pb-12" : ""}>{children}</div>
         </main>
-        
         {!isDesktop && showNav && <BottomNav />}
       </div>
     </div>
@@ -162,41 +122,30 @@ const MainScaffold: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 };
 
 const AppRoutes: React.FC = () => {
-  const { isLoggedIn, hasSeenOnboarding } = useApp();
+  const { isHydrated } = useApp();
   const [isSplashing, setIsSplashing] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsSplashing(false), 2500);
+    const timer = setTimeout(() => setIsSplashing(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
-  if (isSplashing) return <SplashScreen />;
+  if (!isHydrated || isSplashing) return <SplashScreen />;
 
   return (
     <Routes>
-      <Route 
-        path="/" 
-        element={
-          <Navigate 
-            to={isLoggedIn ? (hasSeenOnboarding ? "/dashboard" : "/onboarding") : "/login"} 
-            replace 
-          />
-        } 
-      />
-      
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/login" element={<LoginScreen />} />
       <Route path="/onboarding" element={<OnboardingScreen />} />
-      <Route path="/dashboard" element={<DashboardScreen />} />
-      <Route path="/habits" element={<HabitsScreen />} />
-      <Route path="/ai-plan" element={<AIPlanScreen />} />
-      <Route path="/stats" element={<StatsScreen />} />
-      <Route path="/content" element={<ContentScreen />} />
-      <Route path="/settings" element={<SettingsScreen />} />
-      <Route path="/buddy" element={<BuddyScreen />} />
-      <Route path="/profile" element={<ProfileScreen />} />
-      <Route path="/brain-dump" element={<BrainDumpScreen />} />
-      
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
+      <Route path="/habits" element={<ProtectedRoute><HabitsScreen /></ProtectedRoute>} />
+      <Route path="/ai-plan" element={<ProtectedRoute><AIPlanScreen /></ProtectedRoute>} />
+      <Route path="/stats" element={<ProtectedRoute><StatsScreen /></ProtectedRoute>} />
+      <Route path="/content" element={<ProtectedRoute><ContentScreen /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><SettingsScreen /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
+      <Route path="/brain-dump" element={<ProtectedRoute><BrainDumpScreen /></ProtectedRoute>} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 };
