@@ -1,0 +1,8 @@
+{
+  "name": "FocusFlow - Smart Personal Organizer",
+  "description": "A minimalist, monochrome student productivity tool featuring task management, habit tracking, and AI-driven planning.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
