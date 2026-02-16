@@ -1,165 +1,144 @@
 
-import React, { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
-import { AppProvider, useApp } from './AppContext';
-import { Icons } from './constants';
-
-// Views
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { useApp, AppProvider } from './AppContext';
 import SplashScreen from './views/SplashScreen';
 import LoginScreen from './views/LoginScreen';
 import OnboardingScreen from './views/OnboardingScreen';
-import DashboardScreen from './views/DashboardScreen';
-import HabitsScreen from './views/HabitsScreen';
-import AIPlanScreen from './views/AIPlanScreen';
-import StatsScreen from './views/StatsScreen';
-import SettingsScreen from './views/SettingsScreen';
-import ContentScreen from './views/ContentScreen';
-import ProfileScreen from './views/ProfileScreen';
-import BrainDumpScreen from './views/BrainDumpScreen';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ZenMode } from './components/ZenMode';
+import { AmbientSoundPlayer } from './components/AmbientSoundPlayer';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isLoggedIn, hasSeenOnboarding, isHydrated } = useApp();
-  
-  if (!isHydrated) return <SplashScreen />;
-  if (!isLoggedIn) return <Navigate to="/login" replace />;
-  if (!hasSeenOnboarding) return <Navigate to="/onboarding" replace />;
-  
-  return <>{children}</>;
+// Lazy loading for speed
+const Dashboard = lazy(() => import('./views/DashboardScreen'));
+const BrainDump = lazy(() => import('./views/BrainDumpScreen'));
+const AIPlan = lazy(() => import('./views/AIPlanScreen'));
+const Habits = lazy(() => import('./views/HabitsScreen'));
+const Stats = lazy(() => import('./views/StatsScreen'));
+const Settings = lazy(() => import('./views/SettingsScreen'));
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) { 
+    super(props); 
+    this.state = { hasError: false }; 
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-screen w-screen flex flex-col items-center justify-center p-12 text-center bg-white">
+           <span className="text-4xl mb-4">🧘</span>
+           <h2 className="text-xl font-black text-[#2B3A67]">Take a deep breath...</h2>
+           <p className="text-slate-500 mt-2 text-sm">We're fixing a small hiccup. Please refresh.</p>
+           <button onClick={() => window.location.reload()} className="mt-8 px-8 py-3 bg-[#2B3A67] text-white font-black rounded-2xl text-xs uppercase tracking-widest">Refresh App</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const SunsetModeOverlay = () => {
+  const [isSunset, setIsSunset] = useState(false);
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour >= 20 || hour < 6) setIsSunset(true);
+  }, []);
+  if (!isSunset) return null;
+  return <div className="sunset-overlay" />;
 };
 
-const Sidebar: React.FC = () => {
-  const { pathname } = useLocation();
-  const { userName } = useApp();
-  
-  const navItems = [
-    { path: '/dashboard', label: 'Home', icon: <Icons.Home /> },
-    { path: '/habits', label: 'Habits', icon: <Icons.Tasks /> },
-    { path: '/brain-dump', label: 'Inbox', icon: <Icons.Inbox /> },
-    { path: '/ai-plan', label: 'AI Plan', icon: <Icons.AI /> },
-    { path: '/stats', label: 'Stats', icon: <Icons.Stats /> },
-    { path: '/content', label: 'Tips', icon: <Icons.Tips /> },
-  ];
+const AppContent: React.FC = () => {
+  const { isLoggedIn, hasSeenOnboarding, isDarkMode, isFlowStateActive, isZenModeActive } = useApp();
+  const [isSplashing, setIsSplashing] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsSplashing(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isSplashing) return <SplashScreen />;
+  if (!isLoggedIn) return <LoginScreen />;
+  if (!hasSeenOnboarding) return <OnboardingScreen />;
 
   return (
-    <aside className="hidden md:flex flex-col w-72 bg-[#2B3A67] text-white h-screen sticky top-0 py-10 px-6 z-[70] shadow-2xl border-r border-white/5">
-      <div className="flex items-center gap-4 px-2 mb-12">
-        <div className="w-12 h-12 bg-[#E63946] rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg">F</div>
-        <span className="font-black tracking-tight text-2xl">FocusFlow</span>
-      </div>
-
-      <nav className="flex-1 flex flex-col gap-3">
-        {navItems.map((item) => {
-          const isActive = pathname === item.path;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-4 px-5 py-4 rounded-[20px] transition-all duration-300 ${
-                isActive ? 'bg-[#E63946] text-white shadow-xl shadow-[#E63946]/20' : 'text-white/50 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              {item.icon}
-              <span className="font-bold text-sm tracking-wide">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
-  );
-};
-
-const BottomNav: React.FC = () => {
-  const { pathname } = useLocation();
-  const navItems = [
-    { path: '/dashboard', label: 'Home', icon: <Icons.Home /> },
-    { path: '/habits', label: 'Habits', icon: <Icons.Tasks /> },
-    { path: '/brain-dump', label: 'Inbox', icon: <Icons.Inbox /> },
-    { path: '/ai-plan', label: 'AI Plan', icon: <Icons.AI /> },
-    { path: '/stats', label: 'Stats', icon: <Icons.Stats /> },
-  ];
-
-  return (
-    <nav className="fixed bottom-6 left-6 right-6 bg-white rounded-[32px] px-2 py-3 flex justify-around items-center z-50 shadow-[0_20px_50px_rgba(43,58,103,0.15)] border border-white/50 md:hidden">
-      {navItems.map((item) => {
-        const isActive = pathname === item.path;
-        return (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={`flex flex-col items-center gap-1 transition-all duration-300 ${isActive ? 'text-[#E63946]' : 'text-slate-400'}`}
-          >
-            <div className={`p-2 rounded-2xl ${isActive ? 'bg-[#E63946]/10' : ''}`}>{item.icon}</div>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-};
-
-const MainScaffold: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { progress, language } = useApp();
-  const { pathname } = useLocation();
-  const isDesktop = window.innerWidth >= 800;
-  const showNav = ['/dashboard', '/habits', '/ai-plan', '/stats', '/content', '/brain-dump'].includes(pathname);
-  const isRtl = language === 'ar';
-
-  return (
-    <div className="flex h-screen bg-[#F8F9FA] overflow-hidden" dir={isRtl ? 'rtl' : 'ltr'}>
-      {isDesktop && showNav && <Sidebar />}
-      <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-slate-50/30">
-        {showNav && (
-          <div className="absolute top-0 left-0 right-0 z-[60] h-1 bg-[#E63946]/10">
-            <div className="h-full bg-[#E63946] transition-all duration-1000" style={{ width: `${progress}%` }} />
+    <div className={`${isDarkMode ? 'dark' : ''} min-h-screen bg-[#F8F9FA] dark:bg-darkBg transition-colors overflow-y-auto no-scrollbar`}>
+      <SunsetModeOverlay />
+      <ZenMode />
+      <AmbientSoundPlayer />
+      
+      {!isZenModeActive && (
+        <header className="fixed top-0 w-full z-[150] glass-effect h-16 flex items-center justify-between px-8">
+          <div className="flex items-center gap-2">
+             <div className="w-8 h-8 bg-[#E63946] rounded-lg flex items-center justify-center text-white font-bold">F</div>
+             <span className="font-black text-[#2B3A67] dark:text-white tracking-tight">FocusFlow</span>
+             <div className="ml-2 w-2 h-2 rounded-full bg-emerald-500 opacity-50 shadow-sm" title="Cloud Sync Active" />
           </div>
-        )}
-        <main className={`flex-1 overflow-y-auto no-scrollbar ${!isDesktop && showNav ? 'pb-32' : ''}`}>
-           <div className={isDesktop && showNav ? "max-w-[1000px] mx-auto w-full px-8 pb-12" : ""}>{children}</div>
-        </main>
-        {!isDesktop && showNav && <BottomNav />}
-      </div>
+          <nav className="flex gap-6">
+            {!isFlowStateActive && (
+              <>
+                <button onClick={() => window.location.hash = '#/'} className="text-[10px] font-black tracking-widest uppercase text-slate-400 hover:text-[#2B3A67] dark:hover:text-white">Today</button>
+                <button onClick={() => window.location.hash = '#/plan'} className="text-[10px] font-black tracking-widest uppercase text-slate-400 hover:text-[#2B3A67] dark:hover:text-white">Plan</button>
+              </>
+            )}
+            <button onClick={() => window.location.hash = '#/capture'} className="text-[10px] font-black tracking-widest uppercase text-slate-400 hover:text-[#2B3A67] dark:hover:text-white">Capture</button>
+          </nav>
+        </header>
+      )}
+      
+      <main className={`${isZenModeActive ? 'hidden' : 'pt-4 pb-24'}`}>
+        <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-[#2B3A67] border-t-transparent rounded-full animate-spin" /></div>}>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/plan" element={<AIPlan />} />
+            <Route path="/capture" element={<BrainDump />} />
+            <Route path="/habits" element={<Habits />} />
+            <Route path="/stats" element={<Stats />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Suspense>
+      </main>
+
+      {!isZenModeActive && (
+        <footer className="fixed bottom-0 left-0 right-0 h-20 glass-effect border-t border-slate-100 dark:border-white/10 flex items-center justify-around px-6 z-[150]">
+          <button onClick={() => window.location.hash = '#/'} className="flex flex-col items-center gap-1">
+            <span className="text-lg">🏠</span>
+            <span className="text-[8px] font-black uppercase tracking-widest opacity-40">Home</span>
+          </button>
+          <button onClick={() => window.location.hash = '#/habits'} className="flex flex-col items-center gap-1">
+            <span className="text-lg">🔥</span>
+            <span className="text-[8px] font-black uppercase tracking-widest opacity-40">Habits</span>
+          </button>
+          <button onClick={() => window.location.hash = '#/stats'} className="flex flex-col items-center gap-1">
+            <span className="text-lg">✨</span>
+            <span className="text-[8px] font-black uppercase tracking-widest opacity-40">DNA</span>
+          </button>
+          <button onClick={() => window.location.hash = '#/settings'} className="flex flex-col items-center gap-1">
+            <span className="text-lg">⚙️</span>
+            <span className="text-[8px] font-black uppercase tracking-widest opacity-40">Set</span>
+          </button>
+        </footer>
+      )}
     </div>
   );
 };
 
-const AppRoutes: React.FC = () => {
-  const { isHydrated } = useApp();
-  const [isSplashing, setIsSplashing] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsSplashing(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!isHydrated || isSplashing) return <SplashScreen />;
-
-  return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/login" element={<LoginScreen />} />
-      <Route path="/onboarding" element={<OnboardingScreen />} />
-      <Route path="/dashboard" element={<ProtectedRoute><DashboardScreen /></ProtectedRoute>} />
-      <Route path="/habits" element={<ProtectedRoute><HabitsScreen /></ProtectedRoute>} />
-      <Route path="/ai-plan" element={<ProtectedRoute><AIPlanScreen /></ProtectedRoute>} />
-      <Route path="/stats" element={<ProtectedRoute><StatsScreen /></ProtectedRoute>} />
-      <Route path="/content" element={<ProtectedRoute><ContentScreen /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><SettingsScreen /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
-      <Route path="/brain-dump" element={<ProtectedRoute><BrainDumpScreen /></ProtectedRoute>} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
-  );
-};
-
-const App: React.FC = () => {
-  return (
-    <AppProvider>
-      <HashRouter>
-        <MainScaffold>
-          <AppRoutes />
-        </MainScaffold>
-      </HashRouter>
-    </AppProvider>
-  );
-};
+const App: React.FC = () => (
+  <ErrorBoundary>
+    <HashRouter>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </HashRouter>
+  </ErrorBoundary>
+);
 
 export default App;

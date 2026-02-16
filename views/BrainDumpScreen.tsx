@@ -5,11 +5,11 @@ import { Icons } from '../constants';
 import { Idea } from '../types';
 
 const BrainDumpScreen: React.FC = () => {
-  const { ideas, addIdea, deleteIdea, convertIdeaToTask } = useApp();
+  const { ideas, addIdea, deleteIdea, convertIdeaToTask, t } = useApp();
   const [inputValue, setInputValue] = useState('');
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [processingMode, setProcessingMode] = useState<'flash' | 'pro' | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -25,223 +25,147 @@ const BrainDumpScreen: React.FC = () => {
     setInputValue('');
   };
 
-  const startVoiceCapture = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      showToast("Speech recognition not supported in this browser.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setInputValue(transcript);
-    };
-    recognition.onerror = () => setIsListening(false);
-
-    recognition.start();
-  };
-
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [ideas]);
 
-  const handleProcess = async (action: 'convert' | 'ai' | 'delete') => {
+  const handleProcess = async (mode: 'local' | 'flash' | 'pro' | 'delete') => {
     if (!selectedIdea) return;
     
-    if (action === 'delete') {
+    if (mode === 'delete') {
       deleteIdea(selectedIdea.id);
-      showToast("Idea discarded.");
+      showToast("Thought discarded.");
       setSelectedIdea(null);
       return;
     }
 
+    setProcessingMode(mode === 'pro' ? 'pro' : 'flash');
     setIsProcessing(true);
     try {
-      if (action === 'ai') {
-        await convertIdeaToTask(selectedIdea.id, true);
-        showToast("AI Refined & Synchronized! ✨");
-      } else {
-        await convertIdeaToTask(selectedIdea.id, false);
-        showToast("Fast-Converted to Task! 🚀");
-      }
+      await convertIdeaToTask(selectedIdea.id, mode as any);
+      showToast(mode === 'pro' ? "Deep Analysis Complete! ✨" : "Quick Sync Successful! 🚀");
       setSelectedIdea(null);
     } catch (e) {
-      showToast("Processing failed. Try again.");
+      showToast("AI reasoning failed. Check connection.");
     } finally {
       setIsProcessing(false);
+      setProcessingMode(null);
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-white relative overflow-hidden">
-      {/* BACKGROUND CLOUD DECORATION WITH ANIMATION */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center overflow-hidden">
-         <div className="animate-bounce-slow">
-           <svg className="w-[120%] h-auto text-zinc-900" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.5,19c-3.037,0-5.5-2.463-5.5-5.5c0-0.101,0.003-0.201,0.009-0.3c-1.144,0.485-2.394,0.762-3.709,0.783 C7.14,14.008,6.046,14.155,5,14.444C2.179,15.257,0,17.876,0,21c0,1.657,1.343,3,3,3h18c1.657,0,3-1.343,3-3 C24,17.134,21.09,14,17.5,14c-0.369,0-0.724,0.032-1.071,0.091C16.891,15.111,17.5,16.485,17.5,18L17.5,19z M12.5,1c-2.485,0-4.5,2.015-4.5,4.5c0,0.518,0.087,1.014,0.246,1.478C7.145,7.114,6.082,7.317,5,7.581 C2.179,8.324,0,10.865,0,13.889C0,15.546,1.343,16.889,3,16.889h18c1.657,0,3-1.343,3-3c0-3.313-2.687-6-6-6 c-0.569,0-1.111,0.082-1.624,0.232C15.719,3.153,14.285,1,12.5,1z"/>
-           </svg>
-         </div>
-      </div>
-
-      <header className="pt-8 px-6 pb-4 relative z-10">
-        <h1 className="text-3xl font-black text-zinc-900 tracking-tight">Brain Dump</h1>
-        <p className="text-zinc-500 mt-1 font-medium italic opacity-70">Capture everything, worry later.</p>
+    <div className="flex flex-col h-full bg-[#F8F9FA] relative overflow-hidden">
+      <header className="pt-12 px-6 pb-6 bg-white shadow-sm relative z-10 border-b border-slate-50">
+        <div className="flex justify-between items-center max-w-4xl mx-auto w-full">
+           <div>
+              <h1 className="text-3xl font-black text-[#2B3A67] tracking-tight">{t('inboxTitle')}</h1>
+              <p className="text-slate-500 mt-1 font-medium italic opacity-70">Capture & Refine</p>
+           </div>
+           <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-[#2B3A67] shadow-inner">
+              <Icons.Inbox />
+           </div>
+        </div>
       </header>
 
-      {/* IDEA LIST */}
-      <div 
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto no-scrollbar px-6 space-y-4 pt-4 pb-24 relative z-10"
-      >
+      <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar px-6 space-y-4 pt-6 pb-32 relative z-10 max-w-4xl mx-auto w-full">
         {ideas.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center opacity-30 text-center space-y-4">
-             <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center">
+          <div className="h-full flex flex-col items-center justify-center opacity-40 text-center space-y-6 animate-in fade-in duration-1000">
+             <div className="w-24 h-24 bg-white rounded-[40px] shadow-sm flex items-center justify-center text-slate-300">
                 <Icons.Inbox />
              </div>
-             <p className="text-xs font-black uppercase tracking-widest text-zinc-400">Your mind is clear.</p>
+             <div>
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">{t('mindClear')}</p>
+                <p className="text-[10px] font-bold text-slate-300 mt-2">Dump your thoughts below</p>
+             </div>
           </div>
         ) : (
-          ideas.map((idea, index) => (
+          ideas.map((idea) => (
             <div 
-              key={idea.id}
-              onClick={() => setSelectedIdea(idea)}
-              className="animate-bubble-in"
-              style={{ animationDelay: `${index * 80}ms` }}
+              key={idea.id} 
+              onClick={() => setSelectedIdea(idea)} 
+              className="bg-white border border-slate-50 p-6 rounded-[32px] rounded-bl-none shadow-sm cursor-pointer group active:scale-[0.98] transition-all max-w-[85%] animate-in slide-in-from-left duration-300 hover:shadow-md"
             >
-              <div className="bg-white/80 backdrop-blur-sm border border-zinc-100 hover:border-zinc-300 p-6 rounded-[28px] rounded-bl-none shadow-sm transition-all cursor-pointer group active:scale-[0.98]">
-                 <p className="text-sm font-bold text-zinc-800 leading-relaxed">
-                   {idea.text}
-                 </p>
-                 <div className="mt-4 flex justify-between items-center opacity-40 group-hover:opacity-100 transition-opacity">
-                    <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest">
-                       {new Date(idea.capturedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <span className="text-[8px] font-black text-zinc-900 uppercase tracking-widest">Tap to refine</span>
-                 </div>
-              </div>
+               <p className="text-sm font-bold text-slate-800 leading-relaxed">{idea.text}</p>
+               <div className="mt-4 flex justify-between items-center">
+                  <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{new Date(idea.capturedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <div className="flex items-center gap-2">
+                     <span className="text-[8px] font-black text-[#2B3A67] uppercase tracking-widest opacity-40 group-hover:opacity-100 transition-opacity">Tap to Organize</span>
+                  </div>
+               </div>
             </div>
           ))
         )}
       </div>
 
-      {/* CHAT-STYLE INPUT FOOTER */}
-      <div className="p-6 bg-white border-t border-zinc-50 fixed bottom-0 left-0 right-0 z-40 md:relative md:border-none">
-         <form 
-          onSubmit={handleAdd}
-          className="bg-zinc-100 rounded-[28px] flex items-center px-4 py-2 shadow-inner focus-within:bg-white focus-within:ring-2 focus-within:ring-zinc-900/5 transition-all"
-         >
-            <button 
-              type="button"
-              onClick={startVoiceCapture}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                isListening ? 'bg-red-500 text-white animate-pulse' : 'text-zinc-400 hover:text-zinc-900'
-              }`}
-            >
-               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-            </button>
-
+      <div className="p-6 bg-white border-t border-slate-50 fixed bottom-0 left-0 right-0 z-40 md:left-auto md:w-[calc(100%-288px)] flex justify-center">
+         <form onSubmit={handleAdd} className="bg-slate-100 rounded-[32px] flex items-center px-6 py-2 border border-slate-100 focus-within:border-[#2B3A67]/20 transition-all max-w-4xl w-full shadow-inner">
             <input 
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder={isListening ? "Listening..." : "Dump a thought..."}
-              className="flex-1 bg-transparent border-none outline-none font-bold text-zinc-900 placeholder:text-zinc-400 py-3 px-4"
+              type="text" 
+              value={inputValue} 
+              onChange={(e) => setInputValue(e.target.value)} 
+              placeholder={t('dumpThought')} 
+              className="flex-1 bg-transparent border-none outline-none font-bold text-slate-900 placeholder:text-slate-400 py-4" 
             />
-            
             <button 
-              type="submit"
-              disabled={!inputValue.trim()}
-              className="w-10 h-10 bg-zinc-900 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all disabled:opacity-20 ml-2"
+              type="submit" 
+              disabled={!inputValue.trim()} 
+              className="w-12 h-12 bg-[#2B3A67] text-white rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all disabled:opacity-20 ml-2"
             >
                <Icons.Plus />
             </button>
          </form>
       </div>
 
-      {/* PROCESS IDEA MODAL */}
       {selectedIdea && (
         <div className="fixed inset-0 bg-[#2B3A67]/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
            <div className="bg-white w-full max-w-sm rounded-[48px] p-10 animate-in zoom-in-95 duration-300 shadow-2xl relative overflow-hidden">
               {isProcessing && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4">
-                   <div className="w-10 h-10 border-4 border-zinc-100 border-t-zinc-900 rounded-full animate-spin" />
-                   <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">AI is Refinement...</p>
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-6">
+                   <div className="relative">
+                      <div className={`w-14 h-14 border-4 border-slate-100 border-t-[#E63946] rounded-full animate-spin`} />
+                      <div className="absolute inset-0 flex items-center justify-center text-[#2B3A67]">
+                         <Icons.AI />
+                      </div>
+                   </div>
+                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 animate-pulse">{processingMode === 'pro' ? "GEMINI PRO REASONING..." : "QUICK PARSING..."}</p>
                 </div>
               )}
 
               <header className="mb-8">
-                 <h2 className="text-2xl font-black text-[#2B3A67] tracking-tight">Process Idea</h2>
-                 <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mt-2">Raw Mental Data</p>
-                 <div className="mt-4 bg-zinc-50 p-6 rounded-[24px] border border-zinc-100 italic text-zinc-700 font-bold text-sm leading-relaxed">
-                    "{selectedIdea.text}"
-                 </div>
+                 <h2 className="text-2xl font-black text-[#2B3A67] tracking-tight mb-4">Process Thought</h2>
+                 <div className="bg-slate-50 p-6 rounded-[28px] border border-slate-100 italic text-slate-700 font-bold text-sm leading-relaxed max-h-40 overflow-y-auto no-scrollbar shadow-inner">"{selectedIdea.text}"</div>
               </header>
 
               <div className="space-y-3">
-                 <button 
-                  onClick={() => handleProcess('ai')}
-                  className="w-full bg-[#2B3A67] text-white font-black py-5 rounded-[20px] shadow-xl active:scale-[0.98] transition-all text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 group"
-                 >
-                   <span className="group-hover:rotate-12 transition-transform"><Icons.AI /></span>
-                   AI Refine & Sync
+                 <button onClick={() => handleProcess('pro')} className="w-full bg-[#2B3A67] text-white font-black py-5 rounded-[24px] shadow-xl text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-transform hover:bg-[#1E2A4A]">
+                   <Icons.AI />
+                   Deep Strategy (Gemini Pro Thinking)
                  </button>
-                 <button 
-                  onClick={() => handleProcess('convert')}
-                  className="w-full bg-white border-2 border-zinc-100 text-[#2B3A67] font-black py-5 rounded-[20px] active:scale-[0.98] transition-all text-[10px] uppercase tracking-widest"
-                 >
-                   Fast Local Convert
+                 <button onClick={() => handleProcess('flash')} className="w-full bg-white border-2 border-slate-100 text-[#2B3A67] font-black py-5 rounded-[24px] text-[10px] uppercase tracking-widest active:scale-95 transition-transform shadow-sm">
+                   Quick Sync (Gemini Flash)
                  </button>
-                 <button 
-                  onClick={() => handleProcess('delete')}
-                  className="w-full bg-rose-50 text-rose-500 font-black py-4 rounded-[20px] active:scale-[0.98] transition-all text-[9px] uppercase tracking-widest"
-                 >
-                   Discard Thought
+                 <button onClick={() => handleProcess('local')} className="w-full bg-slate-50 text-slate-500 font-black py-4 rounded-[24px] text-[9px] uppercase tracking-widest active:scale-95 transition-transform">
+                   {t('localConvert')}
                  </button>
-                 <button 
-                  onClick={() => setSelectedIdea(null)}
-                  className="w-full py-4 text-zinc-300 font-bold uppercase tracking-widest text-[9px] hover:text-zinc-500 transition-colors"
-                 >
-                   Leave for later
-                 </button>
+                 <div className="h-px bg-slate-100 my-4" />
+                 <div className="flex gap-3">
+                    <button onClick={() => handleProcess('delete')} className="flex-1 bg-rose-50 text-rose-500 font-black py-4 rounded-[20px] text-[9px] uppercase tracking-widest active:scale-95 transition-transform">
+                      {t('discard')}
+                    </button>
+                    <button onClick={() => setSelectedIdea(null)} className="flex-1 py-4 text-slate-300 font-black uppercase tracking-widest text-[9px]">
+                      {t('cancel')}
+                    </button>
+                 </div>
               </div>
            </div>
         </div>
       )}
 
-      {/* TOAST */}
       {toast && (
-        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 bg-zinc-900 text-white px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl animate-in slide-in-from-bottom-6 z-[60]">
+        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 bg-[#2B3A67] text-white px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl z-[60] animate-in slide-in-from-bottom-6">
           {toast}
         </div>
       )}
-
-      <style>{`
-        @keyframes bubble-in {
-          0% { opacity: 0; transform: translateY(20px) scale(0.9); }
-          60% { transform: translateY(-5px) scale(1.02); }
-          100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .animate-bubble-in {
-          animation: bubble-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-          opacity: 0;
-        }
-        .animate-bounce-slow {
-          animation: bounce-slow 10s infinite ease-in-out;
-        }
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0) scale(1.1) rotate(0deg); }
-          50% { transform: translateY(-20px) scale(1.2) rotate(3deg); }
-        }
-      `}</style>
     </div>
   );
 };

@@ -35,6 +35,7 @@ export const DEFAULT_CHALLENGES: Challenge[] = [
 ];
 
 export const GOAL_TASK_MAPPING: Record<string, Partial<Task>> = {
+  /* Added time to Task interface enables these assignments */
   'Study': { title: 'Focused Study Session', category: Category.STUDY, priority: Priority.HIGH, time: '10:00 AM' },
   'Habits': { title: 'Track Morning Habits', category: Category.HABIT, priority: Priority.NORMAL, time: '08:30 AM' },
   'Prayers': { title: 'Morning Prayer & Reflection', category: Category.PRAYER, priority: Priority.HIGH, time: '05:00 AM' },
@@ -44,16 +45,16 @@ export const GOAL_TASK_MAPPING: Record<string, Partial<Task>> = {
 };
 
 export const INITIAL_HABITS: Habit[] = [
-  { id: 'h1', name: 'Drink 2L Water', streakCount: 12, isCompletedToday: false, lastCompletedDate: '', createdAt: new Date().toISOString(), description: 'Maintaining daily hydration for peak performance.', history: [] },
-  { id: 'h2', name: 'Meditation', streakCount: 5, isCompletedToday: true, lastCompletedDate: new Date().toLocaleDateString(), createdAt: new Date().toISOString(), description: 'Morning mindfulness to start the day with clarity.', history: [new Date().toISOString().split('T')[0]] },
-  { id: 'h3', name: 'Reading', streakCount: 8, isCompletedToday: false, lastCompletedDate: '', createdAt: new Date().toISOString(), description: 'Daily intellectual growth.', history: [] },
+  /* Corrected history typing and property alignment */
+  { id: 'h1', name: 'Drink 2L Water', streakCount: 12, isCompletedToday: false, lastCompletedDate: '', createdAt: new Date().toISOString(), description: 'Maintaining daily hydration for peak performance.', history: {} },
+  { id: 'h2', name: 'Meditation', streakCount: 5, isCompletedToday: true, lastCompletedDate: new Date().toLocaleDateString(), createdAt: new Date().toISOString(), description: 'Morning mindfulness to start the day with clarity.', history: { [new Date().toISOString().split('T')[0]]: true } },
+  { id: 'h3', name: 'Reading', streakCount: 8, isCompletedToday: false, lastCompletedDate: '', createdAt: new Date().toISOString(), description: 'Daily intellectual growth.', history: {} },
 ];
 
 export const GOAL_OPTIONS = ['Study', 'Habits', 'Prayers', 'Health', 'Finance', 'Work'];
 
 export const TRANSLATIONS = {
   en: {
-    // Core Navigation
     home: 'Home',
     tasks: 'Tasks',
     habits: 'Habits',
@@ -63,8 +64,6 @@ export const TRANSLATIONS = {
     settings: 'Settings',
     profile: 'Profile',
     brainDump: 'Brain Dump',
-    
-    // Dashboard & Greetings
     welcome: 'Welcome',
     welcome_back: 'Welcome Back',
     goodMorning: 'Good Morning',
@@ -74,8 +73,6 @@ export const TRANSLATIONS = {
     whatIsFocus: 'What is your focus today?',
     organizedDay: 'Let\'s get your day organized.',
     welcomeUser: 'Welcome, {name}',
-    
-    // Task Actions & UI
     newTask: 'New Task',
     editTask: 'Edit Task',
     taskTitle: 'Task Title',
@@ -101,18 +98,8 @@ export const TRANSLATIONS = {
     archiveDone: 'Archive Completed',
     listClear: 'List is clear',
     focusOutput: 'Focus on the output, not the hours.',
-    
-    // Why Tracker (Failure Analysis)
-    whyTrackerTitle: 'Couldn\'t finish this?',
-    whyTrackerDesc: 'It\'s okay. Help us understand why to optimize your future schedule.',
-    reason_time: 'Not enough time',
-    reason_energy: 'Low Energy / Tired',
-    reason_procrastination: 'Procrastination',
-    reason_unclear: 'Task Unclear',
-    reason_not_important: 'Not important',
-    aiLearningThanks: 'Thanks! We\'ll adjust your future schedule based on this.',
-    
-    // Victory & Success
+    organizeBtn: 'Organize My Day',
+    organizing: 'AI Thinking...',
     victoryTitle: 'You were on fire! 🔥',
     victoryDesc: 'You\'ve crushed 80%+ of your day. What was your secret sauce today?',
     victorySaved: 'Day of Victory Logged! 🌟',
@@ -123,8 +110,6 @@ export const TRANSLATIONS = {
     chip_energy: 'High Energy',
     chip_coffee: 'Perfect Caffeine',
     chip_grit: 'Pure Grit',
-    
-    // Modes & Rhythms
     mode_standard: 'Standard',
     mode_crunch: 'Crunch',
     mode_light: 'Light',
@@ -138,8 +123,6 @@ export const TRANSLATIONS = {
     newWeekTitle: 'New Week, New Focus.',
     setRhythm: 'Set your rhythm for the next 7 days.',
     beginJourney: 'Begin Journey',
-    
-    // Habits
     habitRitual: 'Build your ritual.',
     newRitual: 'New Ritual',
     createHabit: 'Create Habit',
@@ -148,8 +131,6 @@ export const TRANSLATIONS = {
     sortByRecent: 'Recent',
     sortByStreak: 'Streak',
     sortByName: 'Name',
-    
-    // Brain Dump
     inboxTitle: 'Brain Dump',
     inboxSubtitle: 'Capture everything, worry later.',
     dumpThought: 'Dump a thought...',
@@ -160,8 +141,6 @@ export const TRANSLATIONS = {
     localConvert: 'Fast Local Convert',
     discard: 'Discard Thought',
     leaveLater: 'Leave for later',
-    
-    // Settings & Profile
     language: 'Language',
     darkMode: 'Dark Mode',
     resetData: 'Reset All Data',
@@ -170,16 +149,50 @@ export const TRANSLATIONS = {
     level: 'Level',
     tasksDone: 'Tasks Done',
     challengesWon: 'Challenges',
+    masteryProfile: 'Mastery Profile',
     victoryArchive: 'Victory Archive',
     trophyRoom: 'Trophy Room',
-    masteryProfile: 'Mastery Profile',
-    
-    // Smart Suggestions
+    totalMastery: 'Total Mastery',
+    units: 'Units',
+    peakPerformance: 'Peak Performance',
+    focusArchetype: 'Focus Archetype',
+    coreDomain: 'Core Domain',
+    milestoneUnlocked: 'Milestone Unlocked',
+    keepPushing: 'Keep pushing forward.',
+    continuityMastery: 'Continuity is the mother of mastery.',
+    evolutionDNA: 'Your productivity DNA is evolving.',
+    novicePlanner: 'Novice Planner',
+    productivityNinja: 'Productivity Ninja',
+    masterFocus: 'Master of Focus',
     smartSuggestions: 'Smart Suggestions',
-    appliedPreset: 'Applied {label} preset! ✨'
+    appliedPreset: 'Applied {label} preset! ✨',
+    deepReasoning: 'Deep Reasoning',
+    aiSearching: 'Searching the web...',
+    getLiveTip: 'Get Live Study Tip',
+    searchResult: 'Found via Search',
+    visualize: 'Visualize your progress',
+    aiPlan: 'AI Planner',
+    topPriorityShort: 'Top Priority',
+    energyMeter: 'Energy Meter',
+    psychologicalLoad: 'Psychological Load',
+    overloadedWarning: 'Daily Capacity Exceeded! ⚠️',
+    remainingEnergy: '{percent}% Energy Left',
+    loadDescription: 'High priority tasks consume 1.5x more energy.',
+    sources: 'Sources',
+    noSources: 'No external sources used.',
+    visitSource: 'Visit Source',
+    reason_time: 'Not enough time',
+    reason_energy: 'Low Energy',
+    reason_procrastination: 'Procrastination',
+    reason_unclear: 'Task Unclear',
+    reason_not_important: 'Not Important',
+    whyTrackerTitle: 'لماذا لم تنجز هذه المهمة؟',
+    whyTrackerDesc: 'تتبع العقبات يساعد الذكاء الاصطناعي في تحسين يومك.',
+    weeklyActivity: 'النشاط الأسبوعي',
+    taskReminder: 'تذكير بمهمة',
+    timeFor: 'حان وقت'
   },
   ar: {
-    // Core Navigation
     home: 'الرئيسية',
     tasks: 'المهام',
     habits: 'العادات',
@@ -189,8 +202,6 @@ export const TRANSLATIONS = {
     settings: 'الإعدادات',
     profile: 'الملف الشخصي',
     brainDump: 'تفريغ العقل',
-
-    // Dashboard & Greetings
     welcome: 'مرحباً',
     welcome_back: 'مرحباً بعودتك',
     goodMorning: 'صباح الخير',
@@ -200,8 +211,6 @@ export const TRANSLATIONS = {
     whatIsFocus: 'ما هو تركيزك لليوم؟',
     organizedDay: 'لنقم بتنظيم يومك.',
     welcomeUser: 'مرحباً، {name}',
-
-    // Task Actions & UI
     newTask: 'مهمة جديدة',
     editTask: 'تعديل المهمة',
     taskTitle: 'عنوان المهمة',
@@ -227,18 +236,8 @@ export const TRANSLATIONS = {
     archiveDone: 'أرشفة المكتمل',
     listClear: 'القائمة فارغة',
     focusOutput: 'ركز على النتيجة، وليس الساعات.',
-
-    // Why Tracker (Failure Analysis)
-    whyTrackerTitle: 'لم تستطع إكمالها؟',
-    whyTrackerDesc: 'لا بأس. ساعدنا على الفهم لتحسين جدولك المستقبلي.',
-    reason_time: 'ضيق الوقت',
-    reason_energy: 'طاقة منخفضة / تعب',
-    reason_procrastination: 'تسويف',
-    reason_unclear: 'المهمة غير واضحة',
-    reason_not_important: 'ليست مهمة',
-    aiLearningThanks: 'شكراً! سنقوم بتعديل جدولك المستقبلي بناءً على ذلك.',
-
-    // Victory & Success
+    organizeBtn: 'نظّم يومي',
+    organizing: 'يفكر الذكاء الاصطناعي...',
     victoryTitle: 'لقد كنت متميزاً! 🔥',
     victoryDesc: 'لقد أنجزت أكثر من 80% من يومك. ما هو سر نجاحك اليوم؟',
     victorySaved: 'تم تسجيل يوم النصر! 🌟',
@@ -249,8 +248,6 @@ export const TRANSLATIONS = {
     chip_energy: 'طاقة عالية',
     chip_coffee: 'كافيين مثالي',
     chip_grit: 'إرادة صلبة',
-
-    // Modes & Rhythms
     mode_standard: 'قياسي',
     mode_crunch: 'مكثف',
     mode_light: 'خفيف',
@@ -264,8 +261,6 @@ export const TRANSLATIONS = {
     newWeekTitle: 'أسبوع جديد، تركيز جديد.',
     setRhythm: 'حدد إيقاعك للأيام السبعة القادمة.',
     beginJourney: 'ابدأ الرحلة',
-
-    // Habits
     habitRitual: 'ابنِ طقوسك الخاصة.',
     newRitual: 'طقس جديد',
     createHabit: 'إنشاء عادة',
@@ -274,8 +269,6 @@ export const TRANSLATIONS = {
     sortByRecent: 'الأحدث',
     sortByStreak: 'السلسلة',
     sortByName: 'الاسم',
-
-    // Brain Dump
     inboxTitle: 'تفريغ العقل',
     inboxSubtitle: 'سجل كل شيء، واقلق لاحقاً.',
     dumpThought: 'أفرغ فكرة...',
@@ -286,8 +279,6 @@ export const TRANSLATIONS = {
     localConvert: 'تحويل محلي سريع',
     discard: 'تجاهل الفكرة',
     leaveLater: 'اتركها للاحق',
-
-    // Settings & Profile
     language: 'اللغة',
     darkMode: 'الوضع الليلي',
     resetData: 'مسح جميع البيانات',
@@ -296,13 +287,48 @@ export const TRANSLATIONS = {
     level: 'المستوى',
     tasksDone: 'المهام المنجزة',
     challengesWon: 'التحديات',
+    masteryProfile: 'ملف الإتقان',
     victoryArchive: 'أرشيف الانتصارات',
     trophyRoom: 'غرفة الأوسمة',
-    masteryProfile: 'ملف الإتقان',
-
-    // Smart Suggestions
+    totalMastery: 'الإتقان الكلي',
+    units: 'وحدات',
+    peakPerformance: 'ذروة الأداء',
+    focusArchetype: 'نمط التركيز',
+    coreDomain: 'المجال الأساسي',
+    milestoneUnlocked: 'تم فتح إنجاز جديد',
+    keepPushing: 'استمر في التقدم للأمام.',
+    continuityMastery: 'الاستمرارية هي أم الإتقان.',
+    evolutionDNA: 'حمضك النووي للإنتاجية يتطور.',
+    novicePlanner: 'مخطط مبتدئ',
+    productivityNinja: 'نينجا الإنتاجية',
+    masterFocus: 'سيد التركيز',
     smartSuggestions: 'اقتراحات ذكية',
-    appliedPreset: 'تم تطبيق الإعداد {label}! ✨'
+    appliedPreset: 'تم تطبيق الإعداد {label}! ✨',
+    deepReasoning: 'تفكير عميق',
+    aiSearching: 'جاري البحث في الويب...',
+    getLiveTip: 'احصل على نصيحة دراسية مباشرة',
+    searchResult: 'وُجد عبر البحث',
+    visualize: 'تصور تقدمك',
+    aiPlan: 'مخطط الذكاء الاصطناعي',
+    topPriorityShort: 'الأولوية القصوى',
+    energyMeter: 'مؤشر الطاقة',
+    psychologicalLoad: 'الحمل النفسي',
+    overloadedWarning: 'تجاوزت قدرتك اليومية! ⚠️',
+    remainingEnergy: 'تبقي {percent}% من طاقتك',
+    loadDescription: 'المهام العالية الأولوية تستهلك طاقة أكبر بـ 1.5 مرة.',
+    sources: 'المصادر',
+    noSources: 'لم يتم استخدام مصادر خارجية.',
+    visitSource: 'زيارة المصدر',
+    reason_time: 'ضيق الوقت',
+    reason_energy: 'طاقة منخفضة',
+    reason_procrastination: 'تسويف',
+    reason_unclear: 'المهمة غير واضحة',
+    reason_not_important: 'ليست مهمة',
+    whyTrackerTitle: 'لماذا لم تنجز هذه المهمة؟',
+    whyTrackerDesc: 'تتبع العقبات يساعد الذكاء الاصطناعي في تحسين يومك.',
+    weeklyActivity: 'النشاط الأسبوعي',
+    taskReminder: 'تذكير بمهمة',
+    timeFor: 'حان وقت'
   }
 };
 

@@ -12,10 +12,12 @@ export enum Priority {
   NORMAL = 'Normal'
 }
 
+export type PlanningMood = 'Energetic' | 'Focused' | 'Tired';
+
 export enum WeekMode {
   STANDARD = 'Standard',
-  LIGHT = 'Light',
   CRUNCH = 'Crunch',
+  LIGHT = 'Light',
   REVIEW = 'Review'
 }
 
@@ -23,35 +25,57 @@ export interface Task {
   id: string;
   title: string;
   isCompleted: boolean;
-  deadline: string; 
-  scheduledTime?: string; 
-  time?: string;
-  priority?: Priority;
-  estimatedMinutes: number;
-  actualMinutes: number;
-  isRunning: boolean;
-  lastStartTime?: string;
-  postponedCount: number;
   category: Category;
+  priority: Priority;
+  estimatedMinutes: number;
+  deadline: string;
+  postponedCount: number;
+  timeSlot?: 'Morning' | 'Afternoon' | 'Evening';
+  time?: string;
   createdAt: string;
-  priorityScore: number; 
-  failureReason?: string;
-  isFixedTime: boolean;
-  isWorship: boolean; 
+  priorityScore: number;
+  isWorship?: boolean;
+  isRunning?: boolean;
+  timerStartedAt?: string;
+}
+
+export interface Habit {
+  id: string;
+  name: string;
+  streakCount: number;
+  history: Record<string, boolean>;
+  description: string;
+  isCompletedToday: boolean;
+  lastCompletedDate: string;
+  createdAt: string;
+}
+
+export interface UserPersona {
+  isMorningPerson: boolean;
+  avgCompletionTime: string;
+  currentMood: PlanningMood;
+  dailyIntention: string;
+  energyLevel: number;
+  isOverloaded: boolean;
+  consistencyScore: number;
+  energyProfile: 'morning_person' | 'night_owl' | 'mixed';
+  completionStyle: 'marathoner' | 'sprinter';
+  overwhelmTrigger: number;
+  deepWorkHours: number;
+}
+
+export type BehaviorType = 'task_postpone' | 'app_open' | 'task_complete' | 'session_start' | 'update_task_honest' | 'use_ai' | 'daily_completion_check' | 'idle_exit' | 'zen_mode_enter' | 'flow_state_toggle';
+
+export interface BehaviorEvent {
+  type: BehaviorType;
+  timestamp: string;
+  metadata?: any;
 }
 
 export interface Idea {
   id: string;
   text: string;
   capturedAt: string;
-}
-
-export interface SuccessLog {
-  id: string;
-  date: string;
-  tasksCompleted: number;
-  secretSauce: string;
-  productivityScore: number;
 }
 
 export interface Challenge {
@@ -62,41 +86,39 @@ export interface Challenge {
   currentStreak: number;
   isActive: boolean;
   isCompleted: boolean;
-  lastProcessedDate?: string; 
 }
 
-export type Language = 'en' | 'ar';
+export type BadgeTier = 'bronze' | 'silver' | 'gold';
+
+export interface Badge {
+  id: string;
+  title: string;
+  description: string;
+  tier: BadgeTier;
+  category: string;
+  icon: string;
+  isLocked: boolean;
+  progress: number;
+  unlockedAt?: string;
+  isJustUnlocked?: boolean;
+}
 
 export interface AppState {
   tasks: Task[];
   habits: Habit[];
-  challenges: Challenge[]; 
-  ideas: Idea[];
-  successLogs: SuccessLog[];
-  userName: string;
-  selectedGoals: string[];
   isLoggedIn: boolean;
   hasSeenOnboarding: boolean;
-  notificationsEnabled: boolean;
+  isGuest: boolean;
+  userName?: string;
+  email?: string;
   isDarkMode: boolean;
-  language: Language;
-  dailyAvailableMinutes: number;
-  isSurvivalMode: boolean; 
-  isBadDayMode: boolean;
-  dailyIntention?: string;
-  intentionDate?: string;
-  categoryBias: Record<string, number>;
-  currentWeekMode: WeekMode; // NEW
-  weekStartDate?: string; // NEW
-}
-
-export interface Habit {
-  id: string;
-  name: string;
-  streakCount: number;
-  isCompletedToday: boolean;
-  lastCompletedDate?: string;
-  createdAt: string;
-  description: string;
-  history: string[]; 
+  persona: UserPersona;
+  behaviorHistory: BehaviorEvent[];
+  badges: Badge[];
+  aiUsageCount: number;
+  isFlowStateActive: boolean;
+  isZenModeActive: boolean;
+  zenTaskId: string | null;
+  ambientSound: 'none' | 'rain' | 'cafe' | 'white';
+  lastVisitDate?: string;
 }
