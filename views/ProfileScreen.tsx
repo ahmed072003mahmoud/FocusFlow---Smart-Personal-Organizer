@@ -23,90 +23,74 @@ const ProfileScreen: React.FC = () => {
     return Math.max(...habits.map(h => h.streakCount));
   }, [habits]);
 
-  const challengesWon = useMemo(() => challenges.filter(c => c.isCompleted).length, [challenges]);
-
   return (
-    <div className="p-6 space-y-8 pb-32 min-h-full bg-white animate-in fade-in duration-500">
-      <header className="pt-8 flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-zinc-400 hover:text-zinc-900 transition-colors">
+    <div className="min-h-screen bg-black p-8 pt-24 pb-40 space-y-12 animate-in fade-in duration-500 overflow-y-auto no-scrollbar">
+      <header className="flex items-center justify-between">
+        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-zinc-600 hover:text-white transition-colors">
            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-        <h1 className="text-xl font-black text-zinc-900 tracking-tight uppercase">{t('masteryProfile')}</h1>
-        <div className="w-8" /> 
+        <h1 className="system-caption text-zinc-500">{t('masteryProfile')}</h1>
+        <div className="w-8" />
       </header>
 
-      <section className="flex flex-col items-center text-center space-y-4">
-        <div className="relative">
-          <div className="w-28 h-28 bg-[#2B3A67] rounded-[40px] flex items-center justify-center text-white text-4xl font-black shadow-2xl shadow-[#2B3A67]/20">
-            {userName ? userName.charAt(0).toUpperCase() : 'U'}
-          </div>
-          <div className="absolute -bottom-2 -right-2 bg-white border-4 border-zinc-50 p-2 rounded-2xl shadow-lg text-[#2B3A67]">
+      <section className="flex flex-col items-center text-center space-y-6">
+        <div className="w-32 h-32 rounded-[50px] bg-zinc-900 border border-white/5 flex items-center justify-center text-5xl font-light text-white shadow-2xl relative">
+          {userName?.charAt(0)}
+          <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-black shadow-lg">
              <Icons.Check />
           </div>
         </div>
-        <div>
-          <h2 className="text-3xl font-black text-zinc-900 tracking-tight">{userName || 'Explorer'}</h2>
-          <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mt-1">{userTitle}</p>
+        <div className="space-y-1">
+          <h2 className="text-4xl font-light text-white tracking-tighter">{userName}</h2>
+          <p className="system-caption text-zinc-600">{userTitle}</p>
         </div>
       </section>
 
-      <section className="bg-zinc-50 border border-zinc-100 p-8 rounded-[40px] space-y-4">
-        <div className="flex justify-between items-end">
-           <span className="text-sm font-black text-zinc-900">{t('level')} {userLevel}</span>
-           <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{(totalDone % 10)}/10 {t('units')} for {t('level')} {userLevel + 1}</span>
-        </div>
-        <div className="w-full h-4 bg-zinc-200 rounded-full overflow-hidden shadow-inner">
-           <div 
-             className="h-full bg-[#E63946] rounded-full shadow-[0_0_15px_rgba(230,57,70,0.3)] transition-all duration-1000" 
-             style={{ width: `${nextLevelProgress * 100}%` }}
-           />
-        </div>
+      <section className="bg-zinc-950 border border-white/5 p-8 rounded-[40px] space-y-4 shadow-inner">
+         <div className="flex justify-between items-end">
+            <span className="text-sm font-bold text-white">{t('level')} {userLevel}</span>
+            <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">{(totalDone % 10)}/10 {t('units')}</span>
+         </div>
+         <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-white transition-all duration-1000 shadow-[0_0_15px_white]" 
+              style={{ width: `${nextLevelProgress * 100}%` }}
+            />
+         </div>
       </section>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white border border-zinc-100 p-4 rounded-[28px] text-center space-y-1 shadow-sm">
-           <div className="text-orange-500 mb-2 flex justify-center"><Icons.Flame /></div>
-           <p className="text-lg font-black">{maxHabitStreak}</p>
-           <p className="text-[8px] font-black text-zinc-400 uppercase tracking-tighter">{t('streak')}</p>
-        </div>
-        <div className="bg-white border border-zinc-100 p-4 rounded-[28px] text-center space-y-1 shadow-sm">
-           <div className="text-[#2B3A67] mb-2 flex justify-center"><Icons.Tasks /></div>
-           <p className="text-lg font-black">{totalDone}</p>
-           <p className="text-[8px] font-black text-zinc-400 uppercase tracking-tighter">{t('tasksDone')}</p>
-        </div>
-        <div className="bg-white border border-zinc-100 p-4 rounded-[28px] text-center space-y-1 shadow-sm">
-           <div className="text-amber-500 mb-2 flex justify-center"><Icons.Trophy /></div>
-           <p className="text-lg font-black">{challengesWon}</p>
-           <p className="text-[8px] font-black text-zinc-400 uppercase tracking-tighter">{t('challengesWon')}</p>
-        </div>
+        {[
+          { label: t('streak'), val: maxHabitStreak, icon: <Icons.Flame />, color: 'text-zinc-400' },
+          { label: t('tasksDone'), val: totalDone, icon: <Icons.Tasks />, color: 'text-zinc-400' },
+          { label: t('challengesWon'), val: challenges.filter(c => c.isCompleted).length, icon: <Icons.Trophy />, color: 'text-zinc-400' }
+        ].map((stat, i) => (
+          <div key={i} className="bg-zinc-950 border border-white/5 p-6 rounded-[32px] text-center space-y-2">
+            <div className={`mx-auto w-6 h-6 ${stat.color}`}>{stat.icon}</div>
+            <p className="text-xl font-light text-white">{stat.val}</p>
+            <p className="text-[8px] font-black text-zinc-700 uppercase tracking-tighter">{stat.label}</p>
+          </div>
+        ))}
       </div>
 
-      <section className="space-y-6 pt-4">
-         <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-2">
-               <span className="text-amber-500">🌟</span>
-               <h2 className="text-xl font-black text-zinc-900 tracking-tight">{t('victoryArchive')}</h2>
-            </div>
-            <span className="bg-amber-100 text-amber-700 text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-widest">
-               {successLogs.length} Wins
-            </span>
-         </div>
+      <section className="space-y-8 pt-4">
+         <h2 className="system-caption text-zinc-600 px-2">{t('victoryArchive')}</h2>
          <div className="space-y-4">
             {successLogs.length === 0 ? (
-               <div className="text-center py-10 bg-zinc-50 border border-zinc-100 border-dashed rounded-[32px]">
-                  <p className="text-xs font-bold text-zinc-400 px-8">No victories archived yet. Crush 80% of your day to log a win!</p>
+               <div className="p-12 text-center border border-zinc-900 border-dashed rounded-[40px] opacity-20 italic text-sm">
+                  لا توجد انتصارات مؤرشفة بعد.
                </div>
             ) : (
                successLogs.map(log => (
-                  <div key={log.id} className="bg-white border border-amber-100 p-6 rounded-[32px] shadow-sm flex items-center justify-between">
-                     <div className="flex-1">
-                        <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest mb-1">
+                  <div key={log.id} className="bg-zinc-950 border border-white/5 p-8 rounded-[40px] flex items-center justify-between group hover:border-white/10 transition-all">
+                     <div>
+                        <p className="text-[8px] font-black text-zinc-700 uppercase tracking-widest mb-2">
                            {new Date(log.date).toLocaleDateString()}
                         </p>
-                        <h3 className="text-sm font-black text-[#2B3A67]">{log.tasksCompleted} Tasks Crushed</h3>
-                        <p className="text-xs text-slate-500 mt-1 font-medium italic">"{log.secretSauce}"</p>
+                        <h3 className="text-lg font-light text-white leading-none">{log.tasksCompleted} مهمة منجزة</h3>
+                        <p className="text-xs text-zinc-500 mt-2 italic">"{log.secretSauce}"</p>
                      </div>
-                     <div className="w-12 h-12 bg-amber-400 rounded-2xl flex items-center justify-center text-white">
+                     <div className="text-zinc-800 group-hover:text-white transition-colors">
                         <Icons.Check />
                      </div>
                   </div>
@@ -114,27 +98,6 @@ const ProfileScreen: React.FC = () => {
             )}
          </div>
       </section>
-
-      <section className="space-y-6 pt-4">
-         <div className="flex items-center gap-2 px-2">
-            <h2 className="text-xl font-black text-zinc-900 tracking-tight">{t('trophyRoom')}</h2>
-         </div>
-         <div className="grid grid-cols-3 gap-4">
-            {challenges.map(c => (
-              <div key={c.id} className={`aspect-square rounded-[32px] border flex flex-col items-center justify-center p-4 transition-all ${c.isCompleted ? 'bg-zinc-900 text-white shadow-xl' : 'bg-zinc-50 text-zinc-200 border-dashed'}`}>
-                 <div className={c.isCompleted ? 'scale-110 text-amber-500' : 'opacity-30'}><Icons.Trophy /></div>
-                 {c.isCompleted && <span className="text-[7px] font-black uppercase tracking-widest mt-2 text-center">{c.title}</span>}
-              </div>
-            ))}
-         </div>
-      </section>
-
-      <div className="pt-8 text-center">
-         <p className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.2em] leading-relaxed">
-            {t('continuityMastery')} <br/>
-            {t('evolutionDNA')}
-         </p>
-      </div>
     </div>
   );
 };

@@ -13,6 +13,7 @@ export enum Priority {
 }
 
 export type PlanningMood = 'Energetic' | 'Focused' | 'Tired';
+export type AppLanguage = 'ar' | 'en';
 
 export enum WeekMode {
   STANDARD = 'Standard',
@@ -22,13 +23,8 @@ export enum WeekMode {
 }
 
 export type BadgeTier = 'stability' | 'recovery' | 'restraint';
+export type BehaviorType = 'task_complete' | 'task_postpone' | 'zen_mode_enter' | 'use_ai' | 'idle_exit' | 'detox_tasks' | 'app_open';
 
-export type TaskDeferReason = 'low_energy' | 'unclear_task' | 'no_time' | 'procrastination';
-
-// Define BehaviorType to match the events tracked by behavior engines
-export type BehaviorType = 'task_complete' | 'task_postpone' | 'zen_mode_enter' | 'use_ai' | 'idle_exit' | 'detox_tasks';
-
-// Habit interface for ritual tracking
 export interface Habit {
   id: string;
   name: string;
@@ -40,7 +36,6 @@ export interface Habit {
   history: Record<string, boolean>;
 }
 
-// Challenge interface for gamification
 export interface Challenge {
   id: string;
   title: string;
@@ -51,14 +46,12 @@ export interface Challenge {
   isCompleted: boolean;
 }
 
-// Idea interface for the brain dump inbox
 export interface Idea {
   id: string;
   text: string;
   capturedAt: string;
 }
 
-// UserPersona interface for behavioral profiling
 export interface UserPersona {
   isMorningPerson: boolean;
   avgCompletionTime: string;
@@ -86,7 +79,6 @@ export interface Task {
   time?: string;
   createdAt: string;
   priorityScore: number;
-  deferReason?: TaskDeferReason;
 }
 
 export interface Badge {
@@ -98,13 +90,11 @@ export interface Badge {
   icon: string;
   isLocked: boolean;
   unlockedAt?: string;
-  // Added properties for UI visualization
   progress: number;
-  isJustUnlocked?: boolean;
 }
 
 export interface BehaviorEvent {
-  type: string;
+  type: BehaviorType;
   timestamp: string;
   metadata?: any;
 }
@@ -118,16 +108,16 @@ export interface AppState {
   isLoggedIn: boolean;
   hasSeenOnboarding: boolean;
   userName?: string;
+  email?: string;
+  isGuest: boolean;
   isDarkMode: boolean;
+  language: AppLanguage;
   behaviorHistory: BehaviorEvent[];
   badges: Badge[];
   isZenModeActive: boolean;
   zenTaskId: string | null;
   currentWeekMode: WeekMode;
   isComplexityKillSwitchActive: boolean;
-  // State extensions for AI-driven features
   persona: UserPersona;
-  suggestion?: string;
-  activeSoftPrompt?: { id: string; question: string; options: string[] } | null;
-  lastPromptTime?: string;
+  lastStrategicCue?: 'overload' | 'procrastination' | 'morning_boost' | null;
 }

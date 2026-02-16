@@ -15,24 +15,22 @@ const BrainDump = lazy(() => import('./views/BrainDumpScreen'));
 const Stats = lazy(() => import('./views/StatsScreen'));
 const Settings = lazy(() => import('./views/SettingsScreen'));
 const Habits = lazy(() => import('./views/HabitsScreen'));
+const Profile = lazy(() => import('./views/ProfileScreen'));
+const Content = lazy(() => import('./views/ContentScreen'));
 
 interface EBProps { children?: ReactNode; }
 interface EBState { hasError: boolean; }
 
-// Fixed: Inheriting from Component<EBProps, EBState> ensures this.props is correctly typed
+// Fixed: Error on line 36 by using Component directly and ensuring EBProps is properly typed for the class.
 class ErrorBoundary extends Component<EBProps, EBState> {
   public state: EBState = { hasError: false };
-
-  static getDerivedStateFromError(_: Error): EBState {
-    return { hasError: true };
-  }
-
+  static getDerivedStateFromError(_: Error): EBState { return { hasError: true }; }
   render() {
     if (this.state.hasError) {
       return (
-        <div className="h-screen flex flex-col items-center justify-center p-12 text-center bg-[#000]">
-          <h2 className="heading-title text-xl text-white">نحتاج لهدوء</h2>
-          <button onClick={() => window.location.reload()} className="mt-8 px-8 py-3 bg-white text-black rounded-full system-caption text-[8px]">إعادة المحاولة</button>
+        <div className="h-screen flex flex-col items-center justify-center p-12 text-center bg-black">
+          <h2 className="text-xl text-white font-light tracking-widest">نحتاج لهدوء.. تعذر تحميل النظام.</h2>
+          <button onClick={() => window.location.reload()} className="mt-8 px-10 py-4 bg-white text-black rounded-full system-caption text-[8px]">إعادة التموضع</button>
         </div>
       );
     }
@@ -43,9 +41,9 @@ class ErrorBoundary extends Component<EBProps, EBState> {
 const NavigationDock = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isZenModeActive, isFlowStateActive, isFeatureUnlocked } = useApp() as any;
+  const { isZenModeActive, isFeatureUnlocked } = useApp();
 
-  if (isZenModeActive || isFlowStateActive) return null;
+  if (isZenModeActive) return null;
 
   const navItems = [
     { path: '/', icon: <Icons.Home />, unlocked: true },
@@ -53,23 +51,27 @@ const NavigationDock = () => {
     { path: '/capture', icon: <Icons.Inbox />, unlocked: true },
     { path: '/habits', icon: <Icons.Flame />, unlocked: true },
     { path: '/stats', icon: <Icons.Stats />, unlocked: isFeatureUnlocked('dna_stats') },
+    { path: '/settings', icon: <Icons.Gear />, unlocked: true },
   ];
 
   return (
-    <nav className="fixed bottom-10 left-1/2 -translate-x-1/2 px-10 py-5 bg-zinc-950/40 backdrop-blur-3xl rounded-full flex items-center gap-10 z-[100] border border-white/[0.03] shadow-2xl">
+    <nav className="fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 bg-zinc-950/20 backdrop-blur-3xl rounded-full flex items-center gap-8 z-[100] border border-white/[0.03] shadow-2xl">
       {navItems.map((item) => {
         const isActive = location.pathname === item.path;
         return (
           <button
             key={item.path}
             onClick={() => navigate(item.path)}
-            className={`transition-all duration-500 relative ${isActive ? 'text-white scale-125' : 'text-zinc-800 hover:text-zinc-600'} ${!item.unlocked && 'opacity-20 grayscale'}`}
+            className={`transition-all duration-700 relative ${isActive ? 'text-white scale-110' : 'text-zinc-800 hover:text-zinc-500'} ${!item.unlocked && 'opacity-10 grayscale'}`}
           >
             {item.icon}
             {isActive && <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full shadow-[0_0_10px_white]" />}
           </button>
         );
       })}
+      <button onClick={() => navigate('/profile')} className={`w-8 h-8 rounded-full border ${location.pathname === '/profile' ? 'border-white' : 'border-zinc-800'} overflow-hidden`}>
+         <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-[10px] text-zinc-500 hover:text-white transition-colors">U</div>
+      </button>
     </nav>
   );
 };
@@ -88,10 +90,10 @@ const AppContent: React.FC = () => {
   if (!hasSeenOnboarding) return <OnboardingScreen />;
 
   return (
-    <div className="min-h-screen transition-colors duration-500 bg-[#000]">
+    <div className="min-h-screen bg-black transition-all duration-1000">
       <ZenMode />
       <AmbientSoundPlayer />
-      <main className={`${isZenModeActive ? 'hidden' : 'pb-40'}`}>
+      <main className={`${isZenModeActive ? 'hidden' : 'relative'}`}>
         <Suspense fallback={null}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -100,6 +102,8 @@ const AppContent: React.FC = () => {
             <Route path="/habits" element={<Habits />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/knowledge" element={<Content />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Suspense>

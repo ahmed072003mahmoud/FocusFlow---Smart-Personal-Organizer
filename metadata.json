@@ -2,6 +2,8 @@
   "name": "FocusFlow",
   "description": "Smart student organizer powered by Gemini",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "geolocation",
+    "camera"
   ]
 }

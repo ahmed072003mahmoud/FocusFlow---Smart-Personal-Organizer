@@ -3,20 +3,63 @@ import { Task, BehaviorEvent, UserPersona, BehaviorType, Priority } from '../typ
 import { GoogleGenAI } from "@google/genai";
 
 export interface AIDecision {
-  action: 'suggest' | 'silence' | 'reframe' | 'reduce';
+  type: 'overload' | 'procrastination' | 'morning_boost';
   confidence: number;
   payload: any;
   reason: string;
 }
 
 export class AIOrchestrationLayer {
-  private static CONFIDENCE_THRESHOLD = 0.85;
+  /**
+   * Fast Low-Latency Analysis using Gemini 2.5 Flash Lite
+   */
+  static async fastTaskAnalysis(input: string): Promise<string> {
+    // Instantiating per call to ensure latest API key is used
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: `بسرعة فائقة، حلل هذه المهمة وحدد الفئة (دراسة، عمل، عادة) والمدة المتوقعة بالدقائق: "${input}"`
+    });
+    return response.text || "";
+  }
 
   /**
-   * Logic Table:
-   * Signal A: Load > 90% + Evening Time -> Action: Reduce Scope (Move to tomorrow)
-   * Signal B: Task Deferral (3x) + Morning -> Action: Reframe (Micro-tasks)
-   * Signal C: High Energy + Empty Timeline -> Action: Suggest (Strategic Project)
+   * Strategic Deep Thinking using Gemini 3 Pro
+   */
+  static async deepThinkStrategicPivot(problem: string): Promise<string> {
+    // Instantiating per call to ensure latest API key is used
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: `بصفتك مستشاراً تعليمياً رفيع المستوى، حلل هذه المعضلة الدراسية وقدم حلاً جذرياً بـ 3 أبعاد (نفسي، تقني، زمني): "${problem}"`,
+      config: {
+        thinkingConfig: { thinkingBudget: 32768 }
+      }
+    });
+    return response.text || "";
+  }
+
+  /**
+   * Search Grounding using Gemini 3 Flash
+   */
+  static async searchAcknowledge(query: string): Promise<{ text: string, sources: any[] }> {
+    // Instantiating per call to ensure latest API key is used
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `ابحث عن أحدث المعلومات الأكاديمية والموثقة حول: "${query}"`,
+      config: {
+        tools: [{ googleSearch: {} }]
+      }
+    });
+    return {
+      text: response.text || "",
+      sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
+    };
+  }
+
+  /**
+   * Local Scenario Orchestrator
    */
   static async evaluateSituation(state: {
     tasks: Task[], 
@@ -24,44 +67,40 @@ export class AIOrchestrationLayer {
     persona: UserPersona,
     load: number
   }): Promise<AIDecision | null> {
-    
-    const { tasks, load, persona } = state;
+    const { tasks, load } = state;
     const hour = new Date().getHours();
 
-    // SCENARIO: Cognitive Overload
+    // Signal: Cognitive Overload
     if (load > 90) {
       return {
-        action: 'reduce',
+        type: 'overload',
         confidence: 0.95,
-        reason: 'Cognitive load exceeding safe focus threshold.',
-        payload: { tasksToShadow: tasks.filter(t => t.priority === Priority.NORMAL) }
+        reason: 'Overload detected',
+        payload: { strategy: 'shadow_mode' }
       };
     }
 
-    // SCENARIO: The "Wall" (Repeated avoidance)
+    // Signal: Avoidance Pattern
     const stuckTask = tasks.find(t => t.postponedCount >= 3 && !t.isCompleted);
     if (stuckTask) {
       return {
-        action: 'reframe',
+        type: 'procrastination',
         confidence: 0.88,
-        reason: 'Task causing significant cognitive friction.',
-        payload: { taskId: stuckTask.id, strategy: 'Micro-breakdown' }
+        reason: 'Repeated deferral',
+        payload: { taskId: stuckTask.id }
+      };
+    }
+
+    // Signal: Bio-Rhythm Sync
+    if (hour >= 6 && hour <= 10 && tasks.some(t => t.priority === Priority.HIGH && !t.isCompleted)) {
+      return {
+        type: 'morning_boost',
+        confidence: 0.90,
+        reason: 'Peak energy window',
+        payload: {}
       };
     }
 
     return null;
-  }
-
-  static async deepThinkStrategicPivot(problem: string): Promise<string> {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    // REQUIREMENT: Use gemini-3-pro-preview with max thinkingBudget
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: `بصفتك مستشاراً تعليمياً رفيع المستوى، حلل هذه المعضلة الدراسية وقدم حلاً جذرياً: "${problem}"`,
-      config: {
-        thinkingConfig: { thinkingBudget: 32768 }
-      }
-    });
-    return response.text || "";
   }
 }
