@@ -2,32 +2,23 @@
 import { useCallback } from 'react';
 import { useApp } from '../AppContext';
 import { BehaviorType } from '../types';
-import { GamificationEngine } from '../utils/GamificationEngine';
 
 export const useBehaviorEngine = () => {
-  const { setState, setMilestone } = useApp() as any;
+  const { logBehavior } = useApp();
 
-  const logBehavior = useCallback((type: BehaviorType, metadata?: any) => {
-    setState((s: any) => {
-      const { updatedBadges, newUnlock } = GamificationEngine.checkBadgeUpdates(s, type as any);
-      if (newUnlock) setMilestone(`Badge Unlocked: ${newUnlock.title}! 🏆`);
-      
-      // Haptics integration
-      if (type === 'task_complete' && navigator.vibrate) {
-        navigator.vibrate(20);
-      }
-      if (newUnlock && navigator.vibrate) {
-        navigator.vibrate([30, 10, 30]);
-      }
+  const triggerHaptic = useCallback((type: 'success' | 'warning' | 'click') => {
+    if (!navigator.vibrate) return;
+    switch (type) {
+      case 'success': navigator.vibrate([30, 50, 30]); break;
+      case 'warning': navigator.vibrate(100); break;
+      case 'click': navigator.vibrate(10); break;
+    }
+  }, []);
 
-      return {
-        ...s,
-        behaviorHistory: [...s.behaviorHistory, { type, timestamp: new Date().toISOString(), metadata }],
-        badges: updatedBadges,
-        aiUsageCount: type === 'use_ai' ? s.aiUsageCount + 1 : s.aiUsageCount
-      };
-    });
-  }, [setState, setMilestone]);
+  const trackAction = useCallback((type: BehaviorType, metadata?: any) => {
+    logBehavior(type, metadata);
+    if (type === 'task_complete') triggerHaptic('success');
+  }, [logBehavior, triggerHaptic]);
 
-  return { logBehavior };
+  return { trackAction, triggerHaptic };
 };

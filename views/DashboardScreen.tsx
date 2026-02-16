@@ -1,165 +1,145 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../AppContext';
 import { Icons } from '../constants';
-import { Category, Task, Priority, WeekMode } from '../types';
-import { useNavigate } from 'react-router-dom';
+import { Category, Priority } from '../types';
 import TaskCard from '../components/TaskCard';
-import { MindfulBreak } from '../components/MindfulBreak';
+import { useBehaviorEngine } from '../hooks/useBehaviorEngine';
+import { Logo } from '../components/Logo';
 
 const DashboardScreen: React.FC = () => {
   const { 
-    tasks, toggleTask, toggleTaskTimer, addTask, 
-    organizeMyDay, t, dailyIntention, isSurvivalMode, isBadDayMode,
-    toggleBadDayMode, currentWeekMode, weekStartDate, victoryDayPending,
-    dismissVictory, dailyAvailableMinutes, setDailyIntention,
-    milestone, clearMilestone, autoBalance, overloadInfo, toggleZenMode,
-    isFlowStateActive, toggleFlowState
+    tasks, toggleTask, toggleZenMode, persona, load, t,
+    isFlowStateActive, dispatch, userName, setState
   } = useApp();
+  const { trackAction } = useBehaviorEngine();
   
-  const navigate = useNavigate();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isOrganizing, setIsOrganizing] = useState(false);
-  const [showBreak, setShowBreak] = useState(false);
-  const [formTitle, setFormTitle] = useState('');
+  const [intention, setIntention] = useState(persona.dailyIntention || '');
 
-  // Auto-break logic
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const activeTimer = tasks.find(t => t.isRunning);
-      if (activeTimer) {
-        const start = new Date(activeTimer.timerStartedAt!).getTime();
-        const now = new Date().getTime();
-        if ((now - start) >= 2700000) { // 45 mins
-          setShowBreak(true);
-        }
-      }
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [tasks]);
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 5) return "ليلة هادئة";
+    if (hour < 12) return "صباح مشرق";
+    if (hour < 18) return "يوم منتج";
+    return "مساء هادئ";
+  }, []);
 
-  const { energyPercent } = useMemo(() => {
-    const uncompletedTasks = tasks.filter(t => !t.isCompleted);
-    const totalLoad = uncompletedTasks.reduce((acc, task) => {
-      const weight = task.priority === Priority.HIGH ? 1.5 : 1.0;
-      return acc + (task.estimatedMinutes * weight);
-    }, 0);
-    const percent = Math.max(0, ((dailyAvailableMinutes - totalLoad) / dailyAvailableMinutes) * 100);
-    return { energyPercent: Math.round(percent) };
-  }, [tasks, dailyAvailableMinutes]);
+  const displayedTasks = useMemo(() => {
+    if (load > 90) {
+      return tasks.filter(t => t.priority === Priority.HIGH || t.category === Category.PRAYER || t.isCompleted);
+    }
+    return tasks.filter(t => !t.isCompleted).sort((a, b) => (b.priority === Priority.HIGH ? 1 : -1));
+  }, [tasks, load]);
 
-  const sortedTasks = useMemo(() => {
-    let base = [...tasks];
-    if (isBadDayMode) return base.filter(t => t.isWorship || t.priority === Priority.HIGH || t.isCompleted);
-    return base;
-  }, [tasks, isBadDayMode]);
-
-  const handleSave = () => {
-    if (!formTitle.trim()) return;
-    addTask({ title: formTitle, isCompleted: false, category: Category.OTHER, estimatedMinutes: 30, priority: Priority.NORMAL, deadline: new Date().toISOString() });
-    setIsModalOpen(false);
-    setFormTitle('');
+  const handleIntentionSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!intention.trim()) return;
+    setState({ persona: { ...persona, dailyIntention: intention } });
+    trackAction('session_start' as any, { intention });
   };
 
-  if (showBreak) return <MindfulBreak onComplete={() => setShowBreak(false)} />;
-
   return (
-    <div className={`min-h-full pb-32 transition-all duration-1000 ${isBadDayMode ? 'bg-orange-50' : 'bg-[#F8F9FA] dark:bg-darkBg'}`}>
-      
-      {milestone && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top duration-500">
-           <div className="bg-[#2B3A67] text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-4">
-              <Icons.AI />
-              <span className="text-sm font-bold">{milestone}</span>
-              <button onClick={clearMilestone} className="ml-2 opacity-50">✕</button>
-           </div>
-        </div>
-      )}
-
-      <header className="relative pt-16 pb-24 px-6 bg-[#2B3A67] rounded-b-[48px] shadow-lg parallax-bg">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex justify-between items-start mb-4">
-             <div className="flex-1">
-                <h1 className="text-3xl font-black text-white tracking-tight leading-tight">
-                  {isFlowStateActive ? "You're in Flow State" : (isBadDayMode ? t('justBreathe') : t('goodMorning'))}
-                </h1>
-                <p className="text-white/50 text-[10px] font-bold mt-2 tracking-wide italic opacity-80 uppercase">
-                  {isFlowStateActive ? "Time is an illusion. Focus on the output." : currentWeekMode + " Mode"}
-                </p>
-             </div>
-             <div className="flex gap-2">
-               <button onClick={toggleFlowState} className={`p-3 glass rounded-2xl transition-all ${isFlowStateActive ? 'bg-emerald-500/20 text-emerald-300' : 'text-white'}`}>
-                  {isFlowStateActive ? '🧘' : '🌊'}
-               </button>
-               <button onClick={() => toggleBadDayMode(!isBadDayMode)} className={`p-3 glass rounded-2xl transition-all ${isBadDayMode ? 'text-amber-400 bg-amber-400/20' : 'text-white'}`}><Icons.Coffee /></button>
-             </div>
+    <div className="min-h-screen px-6 pt-16 max-w-2xl mx-auto space-y-10 animate-in fade-in duration-1000">
+      {/* Premium Header */}
+      <header className="flex justify-between items-center bg-white/5 p-6 rounded-[35px] border border-white/10 backdrop-blur-xl">
+        <div className="flex items-center gap-5">
+          <div className="relative">
+            <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 animate-pulse"></div>
+            <Logo size={52} className="relative z-10" />
+          </div>
+          <div className="space-y-0.5">
+            <h1 className="text-2xl font-black text-white leading-tight">
+              {greeting}، <span className="text-indigo-400">{userName.split(' ')[0]}</span>
+            </h1>
+            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">
+              {new Date().toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
           </div>
         </div>
-
-        {!isFlowStateActive && (
-          <div className="absolute -bottom-10 left-6 right-6 glass p-6 rounded-[32px] shadow-xl flex flex-col items-center text-center max-w-xl mx-auto">
-            <h2 className="text-sm font-bold italic text-white line-clamp-1">"{dailyIntention || t('whatIsFocus')}"</h2>
-          </div>
-        )}
+        <button className="w-11 h-11 glass-card rounded-2xl flex items-center justify-center text-slate-400 hover:text-white hover:border-indigo-500/30 transition-all">
+          <Icons.Settings />
+        </button>
       </header>
 
-      <div className="px-6 mt-20 space-y-12 max-w-4xl mx-auto">
-        {!isFlowStateActive && (
-          <section className="animate-in fade-in duration-700">
-            <div className={`p-6 rounded-[32px] border-2 transition-all ${overloadInfo.isOverloaded ? 'bg-rose-50 border-rose-100 shadow-rose-100/50' : 'bg-white dark:bg-zinc-900 border-slate-50 dark:border-white/5 shadow-sm'}`}>
-              <div className="flex justify-between items-center mb-4">
-                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-300">{t('energyMeter')}</h3>
-                 <span className="text-lg font-black text-[#2B3A67] dark:text-white">{energyPercent}%</span>
-              </div>
-              <div className="w-full h-3 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
-                <div className={`h-full transition-all duration-1000 ${energyPercent < 25 ? 'bg-[#E63946]' : 'bg-emerald-500'}`} style={{ width: `${energyPercent}%` }} />
-              </div>
-              {overloadInfo.isOverloaded && (
-                <button onClick={() => autoBalance()} className="mt-4 w-full bg-[#E63946] text-white py-3 rounded-2xl text-[8px] font-black uppercase tracking-widest">BALANCE NOW</button>
-              )}
+      {/* Intelligence Gauge - Redesigned */}
+      <section className="glass-card p-10 rounded-[45px] relative overflow-hidden group border-white/5">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent"></div>
+        
+        <div className="flex justify-between items-start mb-8">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">تحليل المجهود الذهني</h3>
             </div>
-          </section>
-        )}
-
-        <section className="space-y-6">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-2xl font-black text-[#2B3A67] dark:text-white tracking-tight">Timeline</h2>
-            {!isFlowStateActive && (
-              <button onClick={() => organizeMyDay()} className="bg-[#2B3A67] text-white px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest">AI Optimize</button>
-            )}
+            <p className="text-xl font-black text-white/90">
+              {load > 85 ? 'حالة إجهاد حرجة - توقف!' : load > 60 ? 'يوم مكثف، استمر بذكاء' : 'طاقة ذهنية صافية'}
+            </p>
           </div>
-          
-          <div className="space-y-4">
-            {sortedTasks.length === 0 ? (
-               <div className="text-center py-20 opacity-30">
-                  <span className="text-4xl">🌤️</span>
-                  <p className="mt-4 font-black uppercase tracking-widest text-[10px]">All clear. Enjoy your peace.</p>
-               </div>
-            ) : (
-              sortedTasks.map((task) => (
-                <TaskCard key={task.id} task={task} onToggle={toggleTask} onTimer={toggleTaskTimer} onZen={toggleZenMode} t={t} />
-              ))
-            )}
-          </div>
-        </section>
-      </div>
-
-      <div className="fixed bottom-10 right-8 z-[80]">
-           <button onClick={() => setIsModalOpen(true)} className="w-18 h-18 bg-[#E63946] text-white rounded-[24px] flex items-center justify-center shadow-2xl shadow-[#E63946]/40 hover:scale-110 active:scale-90 transition-transform"><Icons.Plus /></button>
-      </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-end justify-center">
-          <div className="bg-white w-full max-w-md rounded-t-[40px] p-8 animate-in slide-in-from-bottom duration-300">
-            <h2 className="text-2xl font-black text-[#2B3A67] mb-6">Capture</h2>
-            <input autoFocus type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-bold focus:outline-none" />
-            <div className="flex gap-4 pt-8">
-              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-slate-400 font-bold uppercase tracking-widest text-[10px]">Cancel</button>
-              <button onClick={handleSave} className="flex-[2] bg-[#E63946] text-white font-black py-5 rounded-[24px] shadow-xl uppercase text-[10px] tracking-widest">Commit</button>
+          <div className="text-right">
+            <div className={`text-5xl font-black tracking-tighter ${load > 85 ? 'text-rose-400' : 'text-indigo-400'}`}>
+              {load}<span className="text-xl opacity-40">%</span>
             </div>
           </div>
         </div>
-      )}
+        
+        <div className="relative h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+          <div 
+            className={`h-full rounded-full transition-all duration-[2000ms] cubic-bezier(0.23, 1, 0.32, 1) shadow-[0_0_20px_rgba(99,102,241,0.4)] ${load > 85 ? 'bg-rose-500' : 'bg-indigo-500'}`}
+            style={{ width: `${load}%` }}
+          />
+        </div>
+      </section>
+
+      {/* Modern Intention Form */}
+      <section className="animate-in slide-in-from-bottom-6 duration-1000 delay-200">
+        <form onSubmit={handleIntentionSubmit} className="relative group">
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 text-indigo-500/40 group-focus-within:text-indigo-400 transition-colors">
+            <Icons.Plus />
+          </div>
+          <input 
+            type="text"
+            placeholder="ما هي نيتك الأساسية الآن؟"
+            value={intention}
+            onChange={(e) => setIntention(e.target.value)}
+            className="w-full glass-card bg-white/5 border border-white/5 focus:border-indigo-500/30 rounded-[30px] px-14 py-6 font-bold text-white placeholder:text-slate-600 outline-none transition-all text-lg shadow-inner"
+          />
+        </form>
+      </section>
+
+      {/* Task Section - Refined Hierarchy */}
+      <section className="space-y-8 pb-12">
+        <div className="flex items-center justify-between px-2">
+          <div className="flex items-center gap-4">
+             <div className="w-1.5 h-8 bg-indigo-500 rounded-full"></div>
+             <h2 className="text-2xl font-black text-white tracking-tight">المسار الحالي</h2>
+          </div>
+          <button 
+            onClick={() => dispatch({ type: 'TOGGLE_FLOW' })}
+            className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${isFlowStateActive ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'}`}
+          >
+            {isFlowStateActive ? 'وضع التركيز: نشط' : 'بدء التدفق العميق'}
+          </button>
+        </div>
+
+        <div className="grid gap-5">
+          {displayedTasks.length === 0 ? (
+            <div className="py-24 text-center space-y-4 opacity-30">
+               <div className="text-6xl animate-bounce">✨</div>
+               <p className="text-sm font-black uppercase tracking-[0.3em]">الفضاء الذهني صافٍ تماماً</p>
+            </div>
+          ) : (
+            displayedTasks.map((task) => (
+              <TaskCard 
+                key={task.id} 
+                task={task} 
+                onToggle={toggleTask} 
+                onZen={toggleZenMode} 
+                onDefer={(id) => trackAction('task_postpone', { id })}
+              />
+            ))
+          )}
+        </div>
+      </section>
     </div>
   );
 };

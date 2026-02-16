@@ -1,96 +1,129 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../AppContext';
-import { Icons } from '../constants';
 
 export const ZenMode: React.FC = () => {
   const { isZenModeActive, zenTaskId, tasks, toggleZenMode, toggleTask } = useApp();
   const [seconds, setSeconds] = useState(0);
+  const [isExiting, setIsExiting] = useState(false);
   const [exitCode, setExitCode] = useState('');
-  const [targetCode] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
-  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [targetCode, setTargetCode] = useState('');
+  const wakeLock = useRef<any>(null);
 
   const task = tasks.find(t => t.id === zenTaskId);
 
   useEffect(() => {
     let interval: any;
+    
+    const requestWakeLock = async () => {
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLock.current = await (navigator as any).wakeLock.request('screen');
+          console.log('Wake Lock is active');
+        } catch (err: any) {
+          console.warn(`${err.name}, ${err.message}: Wake Lock failed (likely permissions policy).`);
+        }
+      }
+    };
+
+    const releaseWakeLock = async () => {
+      if (wakeLock.current) {
+        try {
+          await wakeLock.current.release();
+          wakeLock.current = null;
+        } catch (err) {
+          console.error('Failed to release wake lock:', err);
+        }
+      }
+    };
+
     if (isZenModeActive) {
       interval = setInterval(() => setSeconds(s => s + 1), 1000);
+      setTargetCode(Math.floor(1000 + Math.random() * 9000).toString());
+      requestWakeLock();
+    } else {
+      setSeconds(0);
+      setIsExiting(false);
+      releaseWakeLock();
     }
-    return () => clearInterval(interval);
+
+    return () => {
+      if (interval) clearInterval(interval);
+      releaseWakeLock();
+    };
   }, [isZenModeActive]);
 
   if (!isZenModeActive || !task) return null;
 
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const rs = s % 60;
-    return `${m}:${rs.toString().padStart(2, '0')}`;
-  };
-
-  const handleExit = () => {
+  const handleExitConfirm = () => {
     if (exitCode === targetCode) {
-      toggleZenMode();
+      toggleZenMode(null);
       setExitCode('');
-      setShowExitDialog(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-[#F6F7F8] dark:bg-darkBg z-[1000] flex flex-col items-center justify-center p-8 animate-in fade-in duration-1000">
-      
-      <div className="absolute top-12 left-12">
-        <span className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-300">ZEN MODE ACTIVE</span>
+    <div className="fixed inset-0 bg-[#FDFDFE] z-[1000] flex flex-col items-center justify-center p-12 overflow-hidden animate-in fade-in duration-1000">
+      {/* Visual Breathing Guide */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5">
+        <div className="w-[80vw] h-[80vw] bg-[#2B3A67] rounded-full animate-zen-breath" />
       </div>
 
-      <div className="text-center space-y-12 max-w-lg w-full">
-         <div className="space-y-4">
-            <h1 className="text-4xl font-black text-[#2B3A67] dark:text-white tracking-tight leading-tight">{task.title}</h1>
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">{task.category}</p>
-         </div>
+      <div className="relative z-10 text-center space-y-16 max-w-lg">
+        <header className="space-y-4">
+          <span className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-300">نظام التركيز العميق</span>
+          <h1 className="text-4xl font-black text-slate-900 leading-tight">{task.title}</h1>
+        </header>
 
-         <div className="text-8xl font-thin tracking-tighter text-[#2B3A67] dark:text-white/20">
-            {formatTime(seconds)}
-         </div>
+        <div className="text-[120px] font-thin tracking-tighter text-slate-100 select-none">
+          {Math.floor(seconds / 60)}:{(seconds % 60).toString().padStart(2, '0')}
+        </div>
 
-         <div className="pt-24 space-y-6">
-            <button 
-              onClick={() => { toggleTask(task.id); toggleZenMode(); }}
-              className="px-12 py-5 bg-[#E63946] text-white font-black rounded-[24px] uppercase tracking-widest text-xs shadow-2xl shadow-[#E63946]/30 hover:scale-105 active:scale-95 transition-all"
-            >
-              COMPLETE & EXIT
-            </button>
-            <br/>
-            <button 
-              onClick={() => setShowExitDialog(true)}
-              className="text-slate-300 font-bold uppercase tracking-[0.3em] text-[8px] hover:text-slate-500 transition-colors"
-            >
-              EXIT TO DASHBOARD
-            </button>
-         </div>
-      </div>
-
-      {showExitDialog && (
-        <div className="fixed inset-0 bg-white/90 backdrop-blur-xl z-[1001] flex items-center justify-center p-6">
-           <div className="w-full max-w-sm text-center space-y-8">
-              <h2 className="text-xl font-black text-[#2B3A67]">Intentional Exit</h2>
-              <p className="text-slate-500 text-sm font-medium">To prevent distraction, enter the code below to exit focus lock.</p>
-              <div className="text-4xl font-black tracking-[0.5em] text-slate-200">{targetCode}</div>
+        <div className="space-y-8">
+          {!isExiting ? (
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={() => { toggleTask(task.id); toggleZenMode(null); }}
+                className="bg-[#2B3A67] text-white px-12 py-5 rounded-[25px] font-black text-xs uppercase tracking-widest shadow-2xl shadow-[#2B3A67]/20 active:scale-95 transition-all"
+              >
+                إنجاز المهمة والعودة
+              </button>
+              <button 
+                onClick={() => setIsExiting(true)}
+                className="text-[10px] font-bold text-slate-300 uppercase tracking-widest hover:text-slate-500 transition-colors"
+              >
+                إنهاء الجلسة مبكراً
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white p-10 rounded-[45px] shadow-2xl border border-slate-50 animate-in slide-in-from-bottom duration-500 space-y-6">
+              <p className="text-xs font-bold text-slate-400">أدخل الرمز لفك التركيز:</p>
+              <div className="text-4xl font-black tracking-[0.4em] text-[#E63946] mb-4">{targetCode}</div>
               <input 
-                type="text" 
-                maxLength={4} 
+                autoFocus
+                maxLength={4}
                 value={exitCode}
                 onChange={e => setExitCode(e.target.value)}
-                autoFocus
-                className="w-full text-center text-3xl font-black bg-slate-50 border-b-4 border-slate-200 py-4 focus:outline-none focus:border-[#2B3A67] transition-all"
+                className="w-full text-center text-3xl font-black bg-slate-50 border-none rounded-2xl py-4 focus:ring-0"
               />
               <div className="flex gap-4">
-                <button onClick={() => setShowExitDialog(false)} className="flex-1 py-4 text-slate-400 font-bold uppercase tracking-widest text-[10px]">Back to Focus</button>
-                <button onClick={handleExit} className="flex-1 bg-[#2B3A67] text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest">Confirm Exit</button>
+                <button onClick={() => setIsExiting(false)} className="flex-1 py-4 text-[10px] font-black text-slate-300 uppercase">عودة</button>
+                <button onClick={handleExitConfirm} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase">فك القفل</button>
               </div>
-           </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
+      <style>{`
+        @keyframes zen-breath {
+          0%, 100% { transform: scale(1); opacity: 0.03; }
+          50% { transform: scale(1.5); opacity: 0.1; }
+        }
+        .animate-zen-breath {
+          animation: zen-breath 8s infinite ease-in-out;
+        }
+      `}</style>
     </div>
   );
 };

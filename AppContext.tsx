@@ -1,86 +1,183 @@
 
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { Task, Habit, AppState, UserPersona, Category, Priority, PlanningMood, BehaviorEvent, WeekMode, Badge } from './types';
+import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback } from 'react';
+// Added BehaviorType to imports
+import { Task, AppState, UserPersona, Category, Priority, PlanningMood, BehaviorEvent, WeekMode, Badge, Habit, Challenge, SuccessLog, Idea, BehaviorType } from './types';
 import { GoogleGenAI } from "@google/genai";
-import { BehaviorEngine } from './utils/BehaviorEngine';
 import { TRANSLATIONS, INITIAL_HABITS, DEFAULT_CHALLENGES } from './constants';
-import { INITIAL_BADGES, GamificationEngine } from './utils/GamificationEngine';
+import { INITIAL_BADGES, GamificationEngine, ActionType } from './utils/GamificationEngine';
+import { BehaviorEngine } from './utils/BehaviorEngine';
+import { SmartTaskParser } from './utils/SmartTaskParser';
+
+type Action = 
+  | { type: 'SET_TASKS'; payload: Task[] }
+  | { type: 'ADD_TASK'; payload: Task }
+  | { type: 'UPDATE_TASK'; payload: Task }
+  | { type: 'DELETE_TASK'; payload: string }
+  | { type: 'TOGGLE_ZEN'; payload: string | null }
+  | { type: 'TOGGLE_FLOW' }
+  | { type: 'SET_MOOD'; payload: PlanningMood }
+  | { type: 'SET_SOUND'; payload: AppState['ambientSound'] }
+  | { type: 'LOG_BEHAVIOR'; payload: BehaviorEvent }
+  | { type: 'DETOX_TASKS' }
+  | { type: 'LOGIN'; payload: { userName: string; email: string; isGuest: boolean } }
+  | { type: 'COMPLETE_ONBOARDING' }
+  | { type: 'TOGGLE_DARK_MODE' }
+  | { type: 'UPDATE_HABIT'; payload: Habit }
+  | { type: 'TOGGLE_HABIT'; payload: string }
+  | { type: 'ADD_HABIT'; payload: Habit }
+  | { type: 'DELETE_HABIT'; payload: string }
+  | { type: 'ADD_IDEA'; payload: Idea }
+  | { type: 'DELETE_IDEA'; payload: string }
+  | { type: 'SET_WEEK_MODE'; payload: WeekMode }
+  | { type: 'SET_STATE'; payload: Partial<AppState> };
+
+const STORAGE_KEY = 'focus_flow_v5_shadow';
 
 interface AppContextType extends AppState {
-  login: (name: string, email: string) => void;
-  signUp: (name: string, email: string) => void;
+  dispatch: React.Dispatch<Action>;
+  setState: (state: Partial<AppState>) => void;
+  addTask: (t: any) => void;
+  updateTask: (t: Task) => void;
+  toggleTask: (id: string) => void;
+  deleteTask: (id: string) => void;
+  deferTask: (id: string) => void;
+  logBehavior: (type: BehaviorType, metadata?: any) => void;
+  generateWeeklySummary: () => Promise<string>;
+  toggleZenMode: (id: string | null) => void;
+  t: (key: string) => string;
+  load: number;
+  login: (userName: string, email: string) => void;
   guestLogin: () => void;
   completeOnboarding: () => void;
-  addTask: (task: Omit<Task, 'id' | 'postponedCount' | 'createdAt' | 'priorityScore'>) => void;
-  updateTask: (task: Task) => void;
-  deleteTask: (id: string) => void;
-  undoDeleteTask: () => void;
-  clearCompletedTasks: () => void;
-  toggleTask: (id: string) => void;
-  toggleTaskTimer: (id: string) => void;
-  deferTask: (id: string) => void;
-  updateMood: (mood: PlanningMood) => void;
-  setIntention: (text: string) => void;
   toggleDarkMode: () => void;
-  setLanguage: (lang: 'en' | 'ar') => void;
-  setNotificationsEnabled: (enabled: boolean) => void;
-  processBrainDump: (text: string) => Promise<void>;
-  organizeMyDay: () => Promise<void>;
-  clearAllData: () => void;
-  toggleBadDayMode: (val: boolean) => void;
   setWeekMode: (mode: WeekMode) => void;
-  autoBalance: () => void;
-  clearMilestone: () => void;
-  dismissVictory: () => void;
-  joinChallenge: (id: string) => void;
+  addHabit: (h: Partial<Habit>) => void;
   toggleHabit: (id: string) => void;
-  addHabit: (habit: { name: string; description: string }) => void;
-  updateHabit: (habit: Habit) => void;
+  updateHabit: (h: Habit) => void;
   deleteHabit: (id: string) => void;
-  setDailyIntention: (val: string) => void;
-  convertIdeaToTask: (id: string, mode: 'local' | 'flash' | 'pro') => Promise<void>;
   addIdea: (text: string) => void;
   deleteIdea: (id: string) => void;
-  logBehavior: (type: any, metadata?: any) => void;
-  t: (key: string) => string;
-  suggestion: string | null;
-  load: number;
-  overloadInfo: any;
-  activeSoftPrompt: any;
-  milestone: string | null;
-  isSurvivalMode: boolean;
-  isBadDayMode: boolean;
-  dailyAvailableMinutes: number;
-  victoryDayPending: boolean;
-  dailyIntention: string;
-  currentWeekMode: WeekMode;
-  weekStartDate: string;
-  ideas: any[];
-  challenges: any[];
-  successLogs: any[];
-  toggleZenMode: (taskId?: string) => void;
-  toggleFlowState: () => void;
-  setAmbientSound: (sound: 'none' | 'rain' | 'cafe' | 'white') => void;
-  generateEncouragement: () => Promise<string>;
-  taskDetox: () => void;
-  setState: React.Dispatch<React.SetStateAction<AppState>>;
+  convertIdeaToTask: (id: string, mode: 'local' | 'flash' | 'pro') => Promise<void>;
+  processBrainDump: (text: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-const STORAGE_KEY = 'focus_flow_v3';
+
+function appReducer(state: AppState, action: Action): AppState {
+  let newState = state;
+
+  switch (action.type) {
+    case 'SET_STATE':
+      newState = { ...state, ...action.payload };
+      break;
+    case 'LOGIN':
+      newState = { ...state, isLoggedIn: true, userName: action.payload.userName, email: action.payload.email, isGuest: action.payload.isGuest };
+      break;
+    case 'COMPLETE_ONBOARDING':
+      newState = { ...state, hasSeenOnboarding: true };
+      break;
+    case 'TOGGLE_DARK_MODE':
+      newState = { ...state, isDarkMode: !state.isDarkMode };
+      break;
+    case 'ADD_TASK':
+      newState = { ...state, tasks: [action.payload, ...state.tasks] };
+      break;
+    case 'UPDATE_TASK':
+      newState = { ...state, tasks: state.tasks.map(t => t.id === action.payload.id ? action.payload : t) };
+      break;
+    case 'DELETE_TASK':
+      newState = { ...state, tasks: state.tasks.filter(t => t.id !== action.payload) };
+      break;
+    case 'TOGGLE_ZEN':
+      newState = { ...state, isZenModeActive: !!action.payload, zenTaskId: action.payload };
+      break;
+    case 'TOGGLE_FLOW':
+      newState = { ...state, isFlowStateActive: !state.isFlowStateActive };
+      break;
+    case 'SET_MOOD':
+      newState = { ...state, persona: { ...state.persona, currentMood: action.payload } };
+      break;
+    case 'SET_SOUND':
+      newState = { ...state, ambientSound: action.payload };
+      break;
+    case 'SET_WEEK_MODE':
+      newState = { ...state, currentWeekMode: action.payload };
+      break;
+    case 'ADD_HABIT':
+      newState = { ...state, habits: [action.payload, ...state.habits] };
+      break;
+    case 'TOGGLE_HABIT':
+      newState = {
+        ...state,
+        habits: state.habits.map(h => {
+          if (h.id === action.payload) {
+            const completed = !h.isCompletedToday;
+            return {
+              ...h,
+              isCompletedToday: completed,
+              streakCount: completed ? h.streakCount + 1 : Math.max(0, h.streakCount - 1),
+              lastCompletedDate: completed ? new Date().toISOString() : h.lastCompletedDate
+            };
+          }
+          return h;
+        })
+      };
+      break;
+    case 'UPDATE_HABIT':
+      newState = { ...state, habits: state.habits.map(h => h.id === action.payload.id ? action.payload : h) };
+      break;
+    case 'DELETE_HABIT':
+      newState = { ...state, habits: state.habits.filter(h => h.id !== action.payload) };
+      break;
+    case 'ADD_IDEA':
+      newState = { ...state, ideas: [action.payload, ...state.ideas] };
+      break;
+    case 'DELETE_IDEA':
+      newState = { ...state, ideas: state.ideas.filter(i => i.id !== action.payload) };
+      break;
+    case 'LOG_BEHAVIOR':
+      newState = { ...state, behaviorHistory: [...state.behaviorHistory, action.payload] };
+      break;
+    case 'DETOX_TASKS':
+      const twoWeeksAgo = new Date();
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+      newState = { ...state, tasks: state.tasks.filter(t => !t.isCompleted || new Date(t.createdAt) > twoWeeksAgo) };
+      break;
+    default:
+      return state;
+  }
+
+  // Hook into gamification engine for every action that might trigger a badge
+  const gamificationActionMap: Record<string, ActionType> = {
+    'LOGIN': 'app_open',
+    'ADD_TASK': 'complete_task', // technically "check" happens on complete, but adding is a behavior
+    'UPDATE_TASK': 'update_task_honest',
+    'LOG_BEHAVIOR': 'daily_completion_check'
+  };
+
+  const actionType = gamificationActionMap[action.type];
+  if (actionType) {
+    const { updatedBadges } = GamificationEngine.checkBadgeUpdates(newState, actionType);
+    newState = { ...newState, badges: updatedBadges };
+  }
+
+  return newState;
+}
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<AppState>(() => {
+  const [state, dispatch] = useReducer(appReducer, null, () => {
     const saved = localStorage.getItem(STORAGE_KEY);
     const fallback: AppState = {
       tasks: [],
       habits: INITIAL_HABITS,
+      challenges: DEFAULT_CHALLENGES,
+      successLogs: [],
+      ideas: [],
       isLoggedIn: false,
       hasSeenOnboarding: false,
       isGuest: false,
       isDarkMode: false,
-      userName: '',
-      email: '',
+      userName: 'Student',
       persona: {
         isMorningPerson: true,
         avgCompletionTime: '00:00',
@@ -100,176 +197,154 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isFlowStateActive: false,
       isZenModeActive: false,
       zenTaskId: null,
-      ambientSound: 'none'
+      ambientSound: 'none',
+      currentWeekMode: WeekMode.STANDARD,
+      isSurvivalMode: false,
+      activeSoftPrompt: null
     };
-    try {
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return { ...fallback, ...parsed };
-      }
-      return fallback;
-    } catch (e) {
-      return fallback;
-    }
+    return saved ? { ...fallback, ...JSON.parse(saved) } : fallback;
   });
-
-  const [lastDeletedTask, setLastDeletedTask] = useState<Task | null>(null);
-  const [milestone, setMilestone] = useState<string | null>(null);
-  const dailyAvailableMinutes = 480; 
-
-  const load = useMemo(() => BehaviorEngine.calculatePsychologicalLoad(state.tasks), [state.tasks]);
-  const isSurvivalMode = useMemo(() => load > 100, [load]);
-  const suggestion = useMemo(() => BehaviorEngine.analyze(state.behaviorHistory, state.tasks), [state.behaviorHistory, state.tasks]);
-
-  const t = useCallback((key: string): string => {
-    const lang = (state as any).language || 'en';
-    const dict = (TRANSLATIONS as any)[lang] || TRANSLATIONS.en;
-    return dict[key] || key;
-  }, [state]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  // AI Encouragement Logic
-  const generateEncouragement = async () => {
+  const setState = (payload: Partial<AppState>) => dispatch({ type: 'SET_STATE', payload });
+  const login = (userName: string, email: string) => dispatch({ type: 'LOGIN', payload: { userName, email, isGuest: false } });
+  const guestLogin = () => dispatch({ type: 'LOGIN', payload: { userName: 'Guest', email: 'guest@focusflow.ai', isGuest: true } });
+  const completeOnboarding = () => dispatch({ type: 'COMPLETE_ONBOARDING' });
+  const toggleDarkMode = () => dispatch({ type: 'TOGGLE_DARK_MODE' });
+  const setWeekMode = (mode: WeekMode) => dispatch({ type: 'SET_WEEK_MODE', payload: mode });
+
+  const addTask = (t: any) => dispatch({ type: 'ADD_TASK', payload: { ...t, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString(), postponedCount: 0, priorityScore: t.priority === Priority.HIGH ? 100 : 50 } });
+  const updateTask = (t: Task) => dispatch({ type: 'UPDATE_TASK', payload: t });
+  const deleteTask = (id: string) => dispatch({ type: 'DELETE_TASK', payload: id });
+  const deferTask = (id: string) => {
+    const task = state.tasks.find(t => t.id === id);
+    if (task) {
+      dispatch({ type: 'UPDATE_TASK', payload: { ...task, postponedCount: task.postponedCount + 1 } });
+      logBehavior('task_postpone', { id });
+    }
+  };
+
+  const addHabit = (h: Partial<Habit>) => dispatch({ type: 'ADD_HABIT', payload: { ...h, id: Math.random().toString(36).substr(2, 9), streakCount: 0, isCompletedToday: false, lastCompletedDate: '', createdAt: new Date().toISOString(), history: {} } as Habit });
+  const toggleHabit = (id: string) => dispatch({ type: 'TOGGLE_HABIT', payload: id });
+  const updateHabit = (h: Habit) => dispatch({ type: 'UPDATE_HABIT', payload: h });
+  const deleteHabit = (id: string) => dispatch({ type: 'DELETE_HABIT', payload: id });
+
+  const addIdea = (text: string) => dispatch({ type: 'ADD_IDEA', payload: { id: Math.random().toString(36).substr(2, 9), text, capturedAt: new Date().toISOString() } });
+  const deleteIdea = (id: string) => dispatch({ type: 'DELETE_IDEA', payload: id });
+
+  const toggleTask = (id: string) => {
+    const task = state.tasks.find(t => t.id === id);
+    if (task) {
+      const updated = { ...task, isCompleted: !task.isCompleted };
+      if (updated.isCompleted && task.timerStartedAt) {
+        const duration = (new Date().getTime() - new Date(task.timerStartedAt).getTime()) / 3600000;
+        if (duration > 0.5) state.persona.deepWorkHours += duration;
+      }
+      dispatch({ type: 'UPDATE_TASK', payload: updated });
+      logBehavior('task_complete', { id });
+    }
+  };
+
+  const logBehavior = (type: BehaviorType, metadata?: any) => {
+    const event = { type, timestamp: new Date().toISOString(), metadata };
+    dispatch({ type: 'LOG_BEHAVIOR', payload: event });
+  };
+
+  const convertIdeaToTask = async (id: string, mode: 'local' | 'flash' | 'pro') => {
+    const idea = state.ideas.find(i => i.id === id);
+    if (!idea) return;
+
+    if (mode === 'local') {
+      const parsed = SmartTaskParser.parse(idea.text);
+      addTask(parsed);
+      deleteIdea(id);
+      return;
+    }
+
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const modelName = mode === 'pro' ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview';
+    
+    try {
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: `Analyze this thought and convert it into a concrete task structure: "${idea.text}". Return a JSON object with: title, category (Study, Habit, Prayer, Work, Other), priority (High, Normal), estimatedMinutes (int), time (HH:MM AM/PM).`
+      });
+      
+      const text = response.text || "";
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]);
+        addTask({ ...data, isCompleted: false, deadline: new Date().toISOString() });
+        deleteIdea(id);
+      }
+    } catch (e) {
+      console.error("AI Conversion failed", e);
+      throw e;
+    }
+  };
+
+  const processBrainDump = async (text: string) => {
+    const lines = text.split('\n').filter(l => l.trim().length > 0);
+    for (const line of lines) {
+      const parsed = SmartTaskParser.parse(line);
+      addTask(parsed);
+    }
+  };
+
+  const generateWeeklySummary = async () => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const completed = state.tasks.filter(t => t.isCompleted).map(t => t.title).join(', ');
-    const prompt = `Based on these completed student tasks: [${completed}], write a human-like, 2-line encouraging weekly summary. Be authentic, not robotic.`;
+    const prompt = `Student stats: ${completed}. Current Psychological Load: ${BehaviorEngine.calculatePsychologicalLoad(state.tasks)}%. Write a 2-line strategic summary for their week. Don't be robotic, be a high-performance mentor. Focus on energy management.`;
     try {
       const res = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
-      return res.text || "Keep growing!";
+      return res.text || "You're defending your attention well.";
     } catch { return "Continuous effort leads to mastery."; }
   };
 
-  const logBehavior = useCallback((type: any, metadata?: any) => {
-    setState(s => {
-      const { updatedBadges, newUnlock } = GamificationEngine.checkBadgeUpdates(s, type as any);
-      if (newUnlock) setMilestone(`Badge Unlocked: ${newUnlock.title}! 🏆`);
-      return {
-        ...s,
-        behaviorHistory: [...s.behaviorHistory, { type, timestamp: new Date().toISOString(), metadata }],
-        badges: updatedBadges,
-        aiUsageCount: type === 'use_ai' ? s.aiUsageCount + 1 : s.aiUsageCount
-      };
-    });
-  }, []);
-
-  const toggleZenMode = (taskId?: string) => {
-    setState(s => ({
-      ...s,
-      isZenModeActive: !s.isZenModeActive,
-      zenTaskId: taskId || null,
-      ambientSound: (!s.isZenModeActive && taskId) ? 'rain' : s.ambientSound
-    }));
-    logBehavior('zen_mode_enter', { taskId });
+  const toggleZenMode = (id: string | null) => {
+    dispatch({ type: 'TOGGLE_ZEN', payload: id });
+    if (id) logBehavior('zen_mode_enter', { taskId: id });
   };
 
-  const toggleFlowState = () => {
-    setState(s => ({ ...s, isFlowStateActive: !s.isFlowStateActive }));
-    logBehavior('flow_state_toggle');
-  };
+  const t = useCallback((key: string): string => {
+    const lang = (state as any).language || 'en';
+    return (TRANSLATIONS as any)[lang][key] || key;
+  }, [state]);
 
-  const setAmbientSound = (sound: any) => setState(s => ({ ...s, ambientSound: sound }));
-
-  const taskDetox = () => {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 14);
-    setState(s => ({
-      ...s,
-      tasks: s.tasks.filter(t => new Date(t.createdAt) > cutoff || !t.isCompleted)
-    }));
-    setMilestone("Mindful Detox Complete! ✨");
-  };
-
-  // Rest of the methods...
-  const addTask = (tData: any) => setState(s => ({ ...s, tasks: [{ ...tData, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString(), postponedCount: 0, priorityScore: tData.priority === Priority.HIGH ? 100 : 50 }, ...s.tasks] }));
-  const toggleTask = (id: string) => {
-    setState(s => {
-      const updatedTasks = s.tasks.map(t => {
-        if (t.id === id) {
-          const completed = !t.isCompleted;
-          if (completed && t.timerStartedAt) {
-            const start = new Date(t.timerStartedAt).getTime();
-            const now = new Date().getTime();
-            const mins = (now - start) / 60000;
-            if (mins >= 30) {
-              s.persona.deepWorkHours += (mins / 60);
-            }
-          }
-          return { ...t, isCompleted: completed, isRunning: false };
-        }
-        return t;
-      });
-      return { ...s, tasks: updatedTasks };
-    });
-    logBehavior('task_complete', { id });
-  };
-  const toggleTaskTimer = (id: string) => setState(s => ({ ...s, tasks: s.tasks.map(t => t.id === id ? { ...t, isRunning: !t.isRunning, timerStartedAt: !t.isRunning ? new Date().toISOString() : t.timerStartedAt } : { ...t, isRunning: false }) }));
-
-  const contextValue: AppContextType = {
-    ...state,
-    login: (name: string, email: string) => setState(s => ({ ...s, isLoggedIn: true, userName: name, email })),
-    signUp: (name: string, email: string) => setState(s => ({ ...s, isLoggedIn: true, userName: name, email })),
-    guestLogin: () => setState(s => ({ ...s, isLoggedIn: true, isGuest: true, userName: 'Guest' })),
-    completeOnboarding: () => setState(s => ({ ...s, hasSeenOnboarding: true })),
-    addTask,
-    updateTask: (t: Task) => setState(s => ({ ...s, tasks: s.tasks.map(prev => prev.id === t.id ? t : prev) })),
-    deleteTask: (id: string) => setState(s => ({ ...s, tasks: s.tasks.filter(t => t.id !== id) })),
-    undoDeleteTask: () => { if (lastDeletedTask) setState(s => ({ ...s, tasks: [lastDeletedTask, ...s.tasks] })) },
-    clearCompletedTasks: () => setState(s => ({ ...s, tasks: s.tasks.filter(t => !t.isCompleted) })),
-    toggleTask,
-    toggleTaskTimer,
-    deferTask: (id: string) => { setState(s => ({ ...s, tasks: s.tasks.map(t => t.id === id ? { ...t, postponedCount: t.postponedCount + 1 } : t) })); logBehavior('task_postpone', { id }); },
-    updateMood: (mood: PlanningMood) => setState(s => ({ ...s, persona: { ...s.persona, currentMood: mood } })),
-    setIntention: (dailyIntention: string) => setState(s => ({ ...s, persona: { ...s.persona, dailyIntention } })),
-    toggleDarkMode: () => setState(s => ({ ...s, isDarkMode: !s.isDarkMode })),
-    setLanguage: (lang: any) => setState(s => ({ ...s, language: lang } as any)),
-    setNotificationsEnabled: (enabled: boolean) => setState(s => ({ ...s, notificationsEnabled: enabled } as any)),
-    processBrainDump: async (text: string) => { /* logic */ },
-    organizeMyDay: async () => { /* logic */ },
-    clearAllData: () => { localStorage.removeItem(STORAGE_KEY); window.location.reload(); },
-    toggleBadDayMode: (val: boolean) => setState(s => ({ ...s, isBadDayMode: val } as any)),
-    setWeekMode: (mode: WeekMode) => setState(s => ({ ...s, currentWeekMode: mode, weekStartDate: new Date().toISOString() } as any)),
-    autoBalance: () => { /* logic */ },
-    clearMilestone: () => setMilestone(null),
-    dismissVictory: () => setState(s => ({ ...s, victoryDayPending: false } as any)),
-    joinChallenge: (id: string) => { /* logic */ },
-    toggleHabit: (id: string) => { /* logic */ },
-    addHabit: (h: any) => { /* logic */ },
-    updateHabit: (h: any) => { /* logic */ },
-    deleteHabit: (id: string) => { /* logic */ },
-    setDailyIntention: (val: string) => setState(s => ({ ...s, persona: { ...s.persona, dailyIntention: val } })),
-    convertIdeaToTask: async (id: any, mode: any) => { /* logic */ },
-    addIdea: (text: string) => { /* logic */ },
-    deleteIdea: (id: string) => { /* logic */ },
-    logBehavior,
-    t,
-    suggestion,
-    load,
-    overloadInfo: { isOverloaded: load > 100, loadPercent: load },
-    activeSoftPrompt: (state as any).activeSoftPrompt || null,
-    milestone,
-    isSurvivalMode,
-    isBadDayMode: (state as any).isBadDayMode || false,
-    dailyAvailableMinutes,
-    victoryDayPending: (state as any).victoryDayPending || false,
-    dailyIntention: state.persona.dailyIntention,
-    currentWeekMode: (state as any).currentWeekMode || WeekMode.STANDARD,
-    weekStartDate: (state as any).weekStartDate || new Date().toISOString(),
-    ideas: (state as any).ideas || [],
-    challenges: (state as any).challenges || DEFAULT_CHALLENGES,
-    successLogs: (state as any).successLogs || [],
-    toggleZenMode,
-    toggleFlowState,
-    setAmbientSound,
-    generateEncouragement,
-    taskDetox,
-    setState
-  };
+  const load = useMemo(() => BehaviorEngine.calculatePsychologicalLoad(state.tasks), [state.tasks]);
 
   return (
-    <AppContext.Provider value={contextValue}>
+    <AppContext.Provider value={{ 
+      ...state, 
+      dispatch, 
+      setState,
+      addTask, 
+      updateTask,
+      toggleTask, 
+      deleteTask, 
+      deferTask,
+      logBehavior, 
+      generateWeeklySummary, 
+      toggleZenMode, 
+      t, 
+      load,
+      login,
+      guestLogin,
+      completeOnboarding,
+      toggleDarkMode,
+      setWeekMode,
+      addHabit,
+      toggleHabit,
+      updateHabit,
+      deleteHabit,
+      addIdea,
+      deleteIdea,
+      convertIdeaToTask,
+      processBrainDump
+    }}>
       {children}
     </AppContext.Provider>
   );

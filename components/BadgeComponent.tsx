@@ -17,12 +17,7 @@ export const BadgeComponent: React.FC<BadgeComponentProps> = ({ badge, size = 64
     gold: 'border-[#FFD700]'
   };
 
-  const tierGlow: Record<BadgeTier, string> = {
-    bronze: 'shadow-[0_0_10px_rgba(205,127,50,0.3)]',
-    silver: 'shadow-[0_0_15px_rgba(192,192,192,0.4)]',
-    gold: 'shadow-[0_0_20px_rgba(255,215,0,0.5)]'
-  };
-
+  const isGold = badge.tier === 'gold';
   const radius = (size / 2) - 4;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (badge.progress / 100) * circumference;
@@ -31,12 +26,13 @@ export const BadgeComponent: React.FC<BadgeComponentProps> = ({ badge, size = 64
     <div 
       className={`relative flex items-center justify-center rounded-full transition-all duration-500 ease-in-out
         ${badge.isJustUnlocked ? 'scale-110' : 'scale-100'}
-        ${badge.isLocked ? 'grayscale opacity-50' : `grayscale-0 opacity-100 ${tierGlow[badge.tier]}`}
+        ${badge.isLocked ? 'grayscale opacity-50' : 'grayscale-0 opacity-100'}
       `}
       style={{ width: size, height: size }}
     >
       {/* Progress Ring */}
       <svg className="absolute inset-0 -rotate-90" width={size} height={size}>
+        <circle cx={size / 2} cy={size / 2} r={radius} stroke="currentColor" strokeWidth="3" fill="transparent" className="text-slate-100" />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -44,41 +40,39 @@ export const BadgeComponent: React.FC<BadgeComponentProps> = ({ badge, size = 64
           stroke="currentColor"
           strokeWidth="3"
           fill="transparent"
-          className="text-zinc-100 dark:text-zinc-800"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out text-[#5B7C8D]"
         />
-        {(badge.progress > 0 || !badge.isLocked) && (
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="currentColor"
-            strokeWidth="3"
-            fill="transparent"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            className={`transition-all duration-1000 ease-out ${
-              badge.isLocked ? 'text-zinc-300' : 'text-primary-500'
-            }`}
-          />
-        )}
       </svg>
 
       {/* Badge Body */}
       <div 
-        className={`w-[85%] h-[85%] rounded-full bg-white dark:bg-zinc-900 border-2 flex items-center justify-center z-10 
-          ${!badge.isLocked ? tierColors[badge.tier] : 'border-zinc-100 dark:border-zinc-800'}
+        className={`w-[85%] h-[85%] rounded-full bg-white border-2 flex items-center justify-center z-10 overflow-hidden relative
+          ${!badge.isLocked ? tierColors[badge.tier] : 'border-slate-100'}
         `}
       >
+        {!badge.isLocked && isGold && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />}
         <div className={`${badge.isLocked ? 'blur-[1px]' : ''}`}>
            <IconComponent />
         </div>
       </div>
 
-      {/* Unlock Shine Effect */}
-      {badge.isJustUnlocked && (
-        <div className="absolute inset-0 rounded-full bg-white animate-ping opacity-20 pointer-events-none" />
+      {badge.isLocked && (
+        <div className="absolute -bottom-6 flex flex-col items-center w-full">
+           <div className="w-8 h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-slate-300" style={{ width: `${badge.progress}%` }} />
+           </div>
+           <span className="text-[6px] font-black text-slate-300 uppercase mt-1">{Math.round(badge.progress)}%</span>
+        </div>
       )}
+
+      <style>{`
+        @keyframes shimmer {
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 };

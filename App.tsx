@@ -1,66 +1,95 @@
 
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { Component, useState, useEffect, Suspense, lazy, ReactNode } from 'react';
 import { useApp, AppProvider } from './AppContext';
 import SplashScreen from './views/SplashScreen';
 import LoginScreen from './views/LoginScreen';
 import OnboardingScreen from './views/OnboardingScreen';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ZenMode } from './components/ZenMode';
 import { AmbientSoundPlayer } from './components/AmbientSoundPlayer';
+import { Icons } from './constants';
 
-// Lazy loading for speed
 const Dashboard = lazy(() => import('./views/DashboardScreen'));
-const BrainDump = lazy(() => import('./views/BrainDumpScreen'));
 const AIPlan = lazy(() => import('./views/AIPlanScreen'));
-const Habits = lazy(() => import('./views/HabitsScreen'));
+const BrainDump = lazy(() => import('./views/BrainDumpScreen'));
 const Stats = lazy(() => import('./views/StatsScreen'));
 const Settings = lazy(() => import('./views/SettingsScreen'));
+const Habits = lazy(() => import('./views/HabitsScreen'));
 
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-}
+interface EBProps { children?: ReactNode; }
+interface EBState { hasError: boolean; }
 
-interface ErrorBoundaryState {
-  hasError: boolean;
-}
-
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) { 
-    super(props); 
-    this.state = { hasError: false }; 
+// Fixed: Explicitly using Component from named imports and ensuring generic types are applied correctly.
+class ErrorBoundary extends Component<EBProps, EBState> {
+  constructor(props: EBProps) {
+    super(props);
+    // Initializing state which is inherited from Component
+    this.state = { hasError: false };
   }
   static getDerivedStateFromError() { return { hasError: true }; }
   render() {
-    if (this.state.hasError) {
-      return (
-        <div className="h-screen w-screen flex flex-col items-center justify-center p-12 text-center bg-white">
-           <span className="text-4xl mb-4">🧘</span>
-           <h2 className="text-xl font-black text-[#2B3A67]">Take a deep breath...</h2>
-           <p className="text-slate-500 mt-2 text-sm">We're fixing a small hiccup. Please refresh.</p>
-           <button onClick={() => window.location.reload()} className="mt-8 px-8 py-3 bg-[#2B3A67] text-white font-black rounded-2xl text-xs uppercase tracking-widest">Refresh App</button>
-        </div>
-      );
-    }
+    // Accessing state inherited from Component
+    if (this.state.hasError) return (
+      <div className="h-screen flex flex-col items-center justify-center p-12 text-center bg-[#020617]">
+        <span className="text-6xl mb-8 animate-bounce">💆‍♂️</span>
+        <h2 className="text-2xl font-black text-white">نحتاج إلى وقفة تأمل</h2>
+        <p className="text-slate-400 mt-2 font-medium">حدث خطأ تقني غير متوقع. دعنا نستعيد التوازن.</p>
+        <button onClick={() => window.location.reload()} className="mt-10 px-10 py-4 bg-indigo-600 text-white rounded-[25px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20">إعادة المحاولة</button>
+      </div>
+    );
+    // Accessing props inherited from Component
     return this.props.children;
   }
 }
 
-const SunsetModeOverlay = () => {
-  const [isSunset, setIsSunset] = useState(false);
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour >= 20 || hour < 6) setIsSunset(true);
-  }, []);
-  if (!isSunset) return null;
-  return <div className="sunset-overlay" />;
+const NavigationDock = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isZenModeActive, isFlowStateActive } = useApp();
+
+  if (isZenModeActive || isFlowStateActive) return null;
+
+  const navItems = [
+    { path: '/', icon: <Icons.Home />, label: 'الرئيسية' },
+    { path: '/plan', icon: <Icons.AI />, label: 'الذكاء' },
+    { path: '/capture', icon: <Icons.Inbox />, label: 'تفريغ' },
+    { path: '/habits', icon: <Icons.Flame />, label: 'عادات' },
+    { path: '/stats', icon: <Icons.Stats />, label: 'إحصائيات' },
+  ];
+
+  return (
+    <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-lg p-2.5 glass-card rounded-[35px] flex items-center justify-between z-[100] transition-all duration-500 border-white/10">
+      {navItems.map((item) => {
+        const isActive = location.pathname === item.path;
+        return (
+          <button
+            key={item.path}
+            onClick={() => navigate(item.path)}
+            className={`relative flex items-center justify-center h-14 rounded-[28px] transition-all duration-500 ${
+              isActive ? 'bg-indigo-500 text-white px-8 shadow-lg shadow-indigo-500/20 grow' : 'text-slate-500 w-14 hover:text-slate-200'
+            }`}
+          >
+            <div className={`transition-all duration-500 ${isActive ? 'scale-110' : 'scale-90 opacity-60'}`}>
+              {item.icon}
+            </div>
+            {isActive && (
+              <span className="mr-3 text-[11px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-right-3 duration-500">
+                {item.label}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </nav>
+  );
 };
 
 const AppContent: React.FC = () => {
-  const { isLoggedIn, hasSeenOnboarding, isDarkMode, isFlowStateActive, isZenModeActive } = useApp();
+  const { isLoggedIn, hasSeenOnboarding, isZenModeActive } = useApp();
   const [isSplashing, setIsSplashing] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsSplashing(false), 3000);
+    const timer = setTimeout(() => setIsSplashing(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -69,32 +98,16 @@ const AppContent: React.FC = () => {
   if (!hasSeenOnboarding) return <OnboardingScreen />;
 
   return (
-    <div className={`${isDarkMode ? 'dark' : ''} min-h-screen bg-[#F8F9FA] dark:bg-darkBg transition-colors overflow-y-auto no-scrollbar`}>
-      <SunsetModeOverlay />
+    <div className="min-h-screen transition-colors duration-500 bg-[#020617]">
       <ZenMode />
       <AmbientSoundPlayer />
-      
-      {!isZenModeActive && (
-        <header className="fixed top-0 w-full z-[150] glass-effect h-16 flex items-center justify-between px-8">
-          <div className="flex items-center gap-2">
-             <div className="w-8 h-8 bg-[#E63946] rounded-lg flex items-center justify-center text-white font-bold">F</div>
-             <span className="font-black text-[#2B3A67] dark:text-white tracking-tight">FocusFlow</span>
-             <div className="ml-2 w-2 h-2 rounded-full bg-emerald-500 opacity-50 shadow-sm" title="Cloud Sync Active" />
+      <main className={`${isZenModeActive ? 'hidden' : 'pb-36'}`}>
+        <Suspense fallback={
+          <div className="h-screen flex flex-col items-center justify-center gap-6">
+             <div className="w-12 h-12 border-[4px] border-white/5 border-t-indigo-500 rounded-full animate-spin"></div>
+             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600">جاري تحميل المسارات...</p>
           </div>
-          <nav className="flex gap-6">
-            {!isFlowStateActive && (
-              <>
-                <button onClick={() => window.location.hash = '#/'} className="text-[10px] font-black tracking-widest uppercase text-slate-400 hover:text-[#2B3A67] dark:hover:text-white">Today</button>
-                <button onClick={() => window.location.hash = '#/plan'} className="text-[10px] font-black tracking-widest uppercase text-slate-400 hover:text-[#2B3A67] dark:hover:text-white">Plan</button>
-              </>
-            )}
-            <button onClick={() => window.location.hash = '#/capture'} className="text-[10px] font-black tracking-widest uppercase text-slate-400 hover:text-[#2B3A67] dark:hover:text-white">Capture</button>
-          </nav>
-        </header>
-      )}
-      
-      <main className={`${isZenModeActive ? 'hidden' : 'pt-4 pb-24'}`}>
-        <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-[#2B3A67] border-t-transparent rounded-full animate-spin" /></div>}>
+        }>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/plan" element={<AIPlan />} />
@@ -106,27 +119,7 @@ const AppContent: React.FC = () => {
           </Routes>
         </Suspense>
       </main>
-
-      {!isZenModeActive && (
-        <footer className="fixed bottom-0 left-0 right-0 h-20 glass-effect border-t border-slate-100 dark:border-white/10 flex items-center justify-around px-6 z-[150]">
-          <button onClick={() => window.location.hash = '#/'} className="flex flex-col items-center gap-1">
-            <span className="text-lg">🏠</span>
-            <span className="text-[8px] font-black uppercase tracking-widest opacity-40">Home</span>
-          </button>
-          <button onClick={() => window.location.hash = '#/habits'} className="flex flex-col items-center gap-1">
-            <span className="text-lg">🔥</span>
-            <span className="text-[8px] font-black uppercase tracking-widest opacity-40">Habits</span>
-          </button>
-          <button onClick={() => window.location.hash = '#/stats'} className="flex flex-col items-center gap-1">
-            <span className="text-lg">✨</span>
-            <span className="text-[8px] font-black uppercase tracking-widest opacity-40">DNA</span>
-          </button>
-          <button onClick={() => window.location.hash = '#/settings'} className="flex flex-col items-center gap-1">
-            <span className="text-lg">⚙️</span>
-            <span className="text-[8px] font-black uppercase tracking-widest opacity-40">Set</span>
-          </button>
-        </footer>
-      )}
+      <NavigationDock />
     </div>
   );
 };

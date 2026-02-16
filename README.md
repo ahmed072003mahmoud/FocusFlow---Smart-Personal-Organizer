@@ -1,20 +1,30 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
 
-# Run and deploy your AI Studio app
+# 🧬 FocusFlow by Nexus Studio
 
-This contains everything you need to run your app locally.
+> "Innovation is discovery of why the current wheel doesn't turn fast enough."
 
-View your app in AI Studio: https://ai.studio/apps/drive/1g3ioNM4ewrBjcLeDRQO8m9eXj8TEgpwV
+FocusFlow is a **Deep Intelligence Personal Organizer** for students. It moves beyond simple task management into the realm of **Psychological Load Balancing**.
 
-## Run Locally
+## 💎 Core Philosophy
+1. **Zen First**: High-friction modes to protect the most valuable asset: Attention.
+2. **Behavioral DNA**: Productivity is a living, breathing shape, not a bar chart.
+3. **AI Mentor**: Gemini Pro thinking to simulate an academic strategist.
 
-**Prerequisites:**  Node.js
+## 🛠 Tech Stack
+- **Engine**: React 19 + TypeScript (Strict Interfaces)
+- **Intelligence**: Gemini API (Flash/Pro)
+- **Persistence**: LocalStorage with Cloud Sync readiness
+- **Design**: Nexus Glassmorphism + Tailwind CSS
 
+## 📁 Structure
+- `/hooks`: Behavioral logic abstraction (`useBehaviorEngine`)
+- `/utils`: Heavy logic engines (`Gamification`, `Insight`, `SmartParser`)
+- `/components`: Atomized UI elements (`TaskCard`, `DNA`, `Zen`)
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 🚀 Installation
+1. Clone repository.
+2. Inject `API_KEY` into environment.
+3. `npm install && npm start`.
+
+---
+*Developed for elite student performance.*

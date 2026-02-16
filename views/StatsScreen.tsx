@@ -1,62 +1,63 @@
 
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../AppContext';
-import { Icons } from '../constants';
 import { ProductivityDNA } from '../components/ProductivityDNA';
+import { Icons } from '../constants';
 
 const StatsScreen: React.FC = () => {
-  const { tasks, t, generateEncouragement } = useApp();
-  const [wisdom, setWisdom] = useState<string>('Loading AI Wisdom...');
+  const { tasks, generateWeeklySummary } = useApp();
+  const [summary, setSummary] = useState('Analyzing behavior...');
 
   useEffect(() => {
-    generateEncouragement().then(setWisdom);
+    generateWeeklySummary().then(setSummary);
   }, []);
 
   return (
-    <div className="p-6 space-y-12 pb-32 relative no-scrollbar bg-[#F8F9FA] dark:bg-darkBg min-h-screen">
-      <header className="pt-8">
-        <h1 className="text-3xl font-black text-[#2B3A67] dark:text-white tracking-tight leading-tight">Your Essence</h1>
-        <p className="text-slate-500 font-medium italic opacity-70">Behavioral Evolution</p>
+    <div className="p-6 space-y-12 pb-32 bg-[#F8F9FA] min-h-screen">
+      <header className="pt-8 text-center">
+        <h1 className="text-3xl font-black text-slate-800 tracking-tight">Your Essence</h1>
+        <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] mt-2">Behavioral Identity</p>
       </header>
 
-      <section className="flex flex-col items-center justify-center p-12 bg-white dark:bg-darkBg/50 rounded-[48px] shadow-sm border border-slate-50 dark:border-white/5 space-y-8 animate-in zoom-in-95 duration-1000">
+      <section className="flex flex-col items-center justify-center py-12 bg-white rounded-[48px] shadow-sm border border-slate-50 space-y-8">
          <ProductivityDNA tasks={tasks} />
          <div className="text-center">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-300 mb-2">Productivity DNA</h2>
-            <p className="text-sm font-bold text-[#2B3A67] dark:text-white">Fluid Patterns of Growth</p>
+            <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-300">Fluid Pattern</h2>
+            <p className="text-sm font-bold text-slate-800">Growing through balance</p>
          </div>
       </section>
 
-      <section className="bg-[#2B3A67] p-8 rounded-[40px] text-white shadow-xl shadow-[#2B3A67]/20 relative overflow-hidden group">
+      <section className="bg-[#2B3A67] p-8 rounded-[40px] text-white shadow-xl relative overflow-hidden group">
          <div className="absolute top-0 right-0 p-8 opacity-10"><Icons.AI /></div>
-         <h2 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4">Words of Wisdom</h2>
-         <p className="text-lg font-bold leading-relaxed italic">"{wisdom}"</p>
-         <div className="mt-6 flex items-center gap-2 text-[8px] font-black uppercase tracking-widest text-white/20">
-            <Icons.AI /> Generated from your weekly data
+         <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-300 mb-4">Mentor Summary</h3>
+         <p className="text-lg font-bold leading-relaxed italic">"{summary}"</p>
+      </section>
+
+      <section className="space-y-6">
+         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-300 px-2">Weekly Reflection</h3>
+         <div className="bg-white p-8 rounded-[32px] space-y-8 border border-slate-50 shadow-sm">
+            <div className="space-y-2">
+               <p className="text-xs font-bold text-slate-400 uppercase">Pride</p>
+               <p className="text-sm font-black text-slate-800 italic leading-relaxed">What made you feel most competent this week?</p>
+               <textarea className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm mt-2 focus:ring-0" placeholder="Quietly reflect..." />
+            </div>
+            <div className="space-y-2">
+               <p className="text-xs font-bold text-slate-400 uppercase">Growth</p>
+               <p className="text-sm font-black text-slate-800 italic leading-relaxed">What task would you approach differently next time?</p>
+            </div>
          </div>
       </section>
 
       <section className="space-y-6">
-         <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-300 px-2">Reflections</h2>
-         <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white dark:bg-zinc-900 p-6 rounded-[32px] border border-slate-50 dark:border-white/5 shadow-sm text-center">
-               <span className="text-2xl mb-2 block">✨</span>
-               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Deep Hours</p>
-               <p className="text-2xl font-black text-[#2B3A67] dark:text-white mt-1">12.5h</p>
-            </div>
-            <div className="bg-white dark:bg-zinc-900 p-6 rounded-[32px] border border-slate-50 dark:border-white/5 shadow-sm text-center">
-               <span className="text-2xl mb-2 block">🎯</span>
-               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Streak</p>
-               <p className="text-2xl font-black text-[#2B3A67] dark:text-white mt-1">4 Days</p>
-            </div>
+         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-300 px-2">Time Flow</h3>
+         <div className="flex items-end justify-between px-8 py-10 bg-white rounded-[40px] shadow-sm border border-slate-50 h-48">
+            {[40, 70, 45, 90, 65, 30, 55].map((h, i) => (
+               <div key={i} className="w-4 bg-indigo-100 rounded-full relative group cursor-help">
+                  <div className="absolute bottom-0 w-full bg-indigo-500 rounded-full transition-all duration-1000" style={{ height: `${h}%` }} />
+               </div>
+            ))}
          </div>
       </section>
-
-      <div className="text-center py-8">
-        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed">
-           Growth is a quiet revolution. <br/> Keep nurturing your potential.
-        </p>
-      </div>
     </div>
   );
 };

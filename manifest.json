@@ -4,13 +4,13 @@
   "name": "FocusFlow: Smart Personal Organizer",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+      "src": "https://cdn-icons-png.sh/512/3135/3135715.png",
       "sizes": "512x512",
       "type": "image/png"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#5B7C8D",
-  "background_color": "#F6F7F8"
+  "theme_color": "#2B3A67",
+  "background_color": "#F8F9FA"
 }
