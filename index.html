@@ -12,87 +12,51 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
       :root {
-        --deep-space: #020617;
-        --accent-primary: #6366F1;
-        --accent-secondary: #8B5CF6;
-        --glow-green: #ADFF2F;
-        --glass-bg: rgba(15, 23, 42, 0.7);
-        --glass-border: rgba(255, 255, 255, 0.08);
+        --obsidian: #000000;
+        --zinc-950: #09090B;
+        --zinc-900: #18181B;
+        --zinc-800: #27272A;
+        --zinc-400: #A1A1AA;
+        --zinc-600: #52525B;
+        --silver: #F4F4F5;
+        --glass-bg: rgba(9, 9, 11, 0.8);
+        --glass-border: rgba(255, 255, 255, 0.03);
       }
       
       body {
         font-family: 'Noto Sans Arabic', 'Plus Jakarta Sans', sans-serif;
-        background-color: var(--deep-space);
-        color: #F8FAFC;
+        background-color: var(--obsidian);
+        color: var(--silver);
         overflow-x: hidden;
         -webkit-font-smoothing: antialiased;
-        scrollbar-width: none;
       }
 
-      body::-webkit-scrollbar { display: none; }
-
-      /* Advanced Ambient Background */
-      .ambient-field {
+      /* Noise Grain for depth */
+      body::before {
+        content: "";
         position: fixed;
-        inset: 0;
-        z-index: -1;
-        background: radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.08), transparent 40%),
-                    radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.08), transparent 40%);
+        top: 0; left: 0; width: 100%; height: 100%;
+        opacity: 0.03;
+        pointer-events: none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Cfilter id='noiseFilter'%3%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        z-index: 100;
       }
 
-      .animated-blob {
-        position: absolute;
-        width: 600px;
-        height: 600px;
-        background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
-        filter: blur(80px);
-        animation: drift 30s infinite alternate ease-in-out;
-      }
-
-      @keyframes drift {
-        from { transform: translate(-10%, -10%) rotate(0deg); }
-        to { transform: translate(20%, 10%) rotate(180deg); }
-      }
-
-      /* Premium Glassmorphism Classes */
       .glass-panel {
         background: var(--glass-bg);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
         border: 1px solid var(--glass-border);
       }
 
-      .glow-border {
-        position: relative;
-        overflow: hidden;
-      }
-      .glow-border::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border: 1px solid transparent;
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), transparent) border-box;
-        mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-        mask-composite: exclude;
-        pointer-events: none;
+      /* Single focus accent */
+      .focus-glow {
+        box-shadow: 0 0 100px -20px rgba(255, 255, 255, 0.05);
       }
 
-      .premium-card {
-        transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
-      }
-      .premium-card:hover {
-        transform: translateY(-4px) scale(1.01);
-        border-color: rgba(99, 102, 241, 0.3);
-        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.1);
-      }
-
-      /* Typography Polish */
       .heading-title {
-        letter-spacing: -0.03em;
-        line-height: 1.2;
+        letter-spacing: -0.06em;
       }
-      
-      .text-balance { text-wrap: balance; }
     </style>
     <script type="importmap">
     {
@@ -110,9 +74,6 @@
     </script>
   </head>
   <body>
-    <div class="ambient-field">
-      <div class="animated-blob"></div>
-    </div>
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
   </body>

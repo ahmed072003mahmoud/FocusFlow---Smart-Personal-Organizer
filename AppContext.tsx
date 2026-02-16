@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback } from 'react';
-// Added BehaviorType to imports
 import { Task, AppState, UserPersona, Category, Priority, PlanningMood, BehaviorEvent, WeekMode, Badge, Habit, Challenge, SuccessLog, Idea, BehaviorType } from './types';
 import { GoogleGenAI } from "@google/genai";
 import { TRANSLATIONS, INITIAL_HABITS, DEFAULT_CHALLENGES } from './constants';
@@ -31,7 +30,7 @@ type Action =
   | { type: 'SET_WEEK_MODE'; payload: WeekMode }
   | { type: 'SET_STATE'; payload: Partial<AppState> };
 
-const STORAGE_KEY = 'focus_flow_v5_shadow';
+const STORAGE_KEY = 'focus_flow_v6_shadow';
 
 interface AppContextType extends AppState {
   dispatch: React.Dispatch<Action>;
@@ -139,28 +138,11 @@ function appReducer(state: AppState, action: Action): AppState {
       newState = { ...state, behaviorHistory: [...state.behaviorHistory, action.payload] };
       break;
     case 'DETOX_TASKS':
-      const twoWeeksAgo = new Date();
-      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-      newState = { ...state, tasks: state.tasks.filter(t => !t.isCompleted || new Date(t.createdAt) > twoWeeksAgo) };
+      newState = { ...state, tasks: state.tasks.filter(t => !t.isCompleted) };
       break;
     default:
       return state;
   }
-
-  // Hook into gamification engine for every action that might trigger a badge
-  const gamificationActionMap: Record<string, ActionType> = {
-    'LOGIN': 'app_open',
-    'ADD_TASK': 'complete_task', // technically "check" happens on complete, but adding is a behavior
-    'UPDATE_TASK': 'update_task_honest',
-    'LOG_BEHAVIOR': 'daily_completion_check'
-  };
-
-  const actionType = gamificationActionMap[action.type];
-  if (actionType) {
-    const { updatedBadges } = GamificationEngine.checkBadgeUpdates(newState, actionType);
-    newState = { ...newState, badges: updatedBadges };
-  }
-
   return newState;
 }
 
@@ -177,7 +159,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       hasSeenOnboarding: false,
       isGuest: false,
       isDarkMode: false,
-      userName: 'Student',
+      userName: 'طالب ذكي',
       persona: {
         isMorningPerson: true,
         avgCompletionTime: '00:00',
@@ -216,7 +198,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const toggleDarkMode = () => dispatch({ type: 'TOGGLE_DARK_MODE' });
   const setWeekMode = (mode: WeekMode) => dispatch({ type: 'SET_WEEK_MODE', payload: mode });
 
-  const addTask = (t: any) => dispatch({ type: 'ADD_TASK', payload: { ...t, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString(), postponedCount: 0, priorityScore: t.priority === Priority.HIGH ? 100 : 50 } });
+  const addTask = (t: any) => dispatch({ type: 'ADD_TASK', payload: { ...t, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString(), postponedCount: 0, priorityScore: t.priority === Priority.HIGH ? 100 : 50, isCompleted: false } });
   const updateTask = (t: Task) => dispatch({ type: 'UPDATE_TASK', payload: t });
   const deleteTask = (id: string) => dispatch({ type: 'DELETE_TASK', payload: id });
   const deferTask = (id: string) => {
@@ -239,10 +221,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const task = state.tasks.find(t => t.id === id);
     if (task) {
       const updated = { ...task, isCompleted: !task.isCompleted };
-      if (updated.isCompleted && task.timerStartedAt) {
-        const duration = (new Date().getTime() - new Date(task.timerStartedAt).getTime()) / 3600000;
-        if (duration > 0.5) state.persona.deepWorkHours += duration;
-      }
       dispatch({ type: 'UPDATE_TASK', payload: updated });
       logBehavior('task_complete', { id });
     }
@@ -266,11 +244,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const modelName = mode === 'pro' ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview';
+    const config = mode === 'pro' ? { thinkingConfig: { thinkingBudget: 32768 } } : {};
     
     try {
       const response = await ai.models.generateContent({
         model: modelName,
-        contents: `Analyze this thought and convert it into a concrete task structure: "${idea.text}". Return a JSON object with: title, category (Study, Habit, Prayer, Work, Other), priority (High, Normal), estimatedMinutes (int), time (HH:MM AM/PM).`
+        contents: `Analyze this thought and convert it into a concrete task structure: "${idea.text}". Return a JSON object with: title, category (Study, Habit, Prayer, Work, Other), priority (High, Normal), estimatedMinutes (int), time (HH:MM AM/PM).`,
+        config: config
       });
       
       const text = response.text || "";
@@ -297,11 +277,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const generateWeeklySummary = async () => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const completed = state.tasks.filter(t => t.isCompleted).map(t => t.title).join(', ');
-    const prompt = `Student stats: ${completed}. Current Psychological Load: ${BehaviorEngine.calculatePsychologicalLoad(state.tasks)}%. Write a 2-line strategic summary for their week. Don't be robotic, be a high-performance mentor. Focus on energy management.`;
+    const prompt = `Student stats: ${completed}. Write a 2-line strategic summary for their week. Don't be robotic, be a high-performance mentor.`;
     try {
       const res = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
-      return res.text || "You're defending your attention well.";
-    } catch { return "Continuous effort leads to mastery."; }
+      return res.text || "أداء مستقر، استمر في الدفاع عن تركيزك.";
+    } catch { return "الاستمرارية هي أم الإتقان."; }
   };
 
   const toggleZenMode = (id: string | null) => {
@@ -310,9 +290,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const t = useCallback((key: string): string => {
-    const lang = (state as any).language || 'en';
+    const lang = 'ar';
     return (TRANSLATIONS as any)[lang][key] || key;
-  }, [state]);
+  }, []);
 
   const load = useMemo(() => BehaviorEngine.calculatePsychologicalLoad(state.tasks), [state.tasks]);
 

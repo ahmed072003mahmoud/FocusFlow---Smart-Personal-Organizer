@@ -1,150 +1,125 @@
 
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../AppContext';
-import { Icons } from '../constants';
-import { Category, Priority } from '../types';
-import TaskCard from '../components/TaskCard';
+import { Priority, Task } from '../types';
 import { useBehaviorEngine } from '../hooks/useBehaviorEngine';
-import { Logo } from '../components/Logo';
 
 const DashboardScreen: React.FC = () => {
   const { 
-    tasks, toggleTask, toggleZenMode, persona, load, t,
-    isFlowStateActive, dispatch, userName, setState
+    tasks, toggleTask, toggleZenMode, persona, load,
+    dispatch, userName, setState
   } = useApp();
   const { trackAction } = useBehaviorEngine();
   
-  const [intention, setIntention] = useState(persona.dailyIntention || '');
+  const [isCommitting, setIsCommitting] = useState(false);
+  const [microWin, setMicroWin] = useState('');
 
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 5) return "ليلة هادئة";
-    if (hour < 12) return "صباح مشرق";
-    if (hour < 18) return "يوم مليء بالإنجاز";
-    return "مساء هادئ";
-  }, []);
+  // Behavioral Engine: Filter the "One True Task"
+  const currentTask = useMemo(() => {
+    return tasks.filter(t => !t.isCompleted)
+      .sort((a, b) => (b.priority === Priority.HIGH ? 1 : -1))[0];
+  }, [tasks]);
 
-  const displayedTasks = useMemo(() => {
-    const active = tasks.filter(t => !t.isCompleted);
-    if (load > 85) {
-      return active.filter(t => t.priority === Priority.HIGH || t.category === Category.PRAYER);
-    }
-    return active.sort((a, b) => (b.priority === Priority.HIGH ? 1 : -1));
-  }, [tasks, load]);
+  const upcomingCount = tasks.filter(t => !t.isCompleted && t.id !== currentTask?.id).length;
 
-  const handleIntentionSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!intention.trim()) return;
-    setState({ persona: { ...persona, dailyIntention: intention } });
-    trackAction('session_start' as any, { intention });
+  const handleStartCommitment = () => {
+    if (!currentTask) return;
+    setIsCommitting(true);
+  };
+
+  const confirmCommitment = () => {
+    trackAction('zen_mode_enter', { taskId: currentTask?.id, microWin });
+    toggleZenMode(currentTask?.id || null);
+    setIsCommitting(false);
+    setMicroWin('');
   };
 
   return (
-    <div className="min-h-screen px-4 md:px-6 pt-12 md:pt-16 max-w-2xl mx-auto space-y-12 animate-in fade-in duration-700">
-      {/* Dynamic Header */}
-      <header className="flex justify-between items-center bg-white/[0.03] p-6 rounded-[40px] border border-white/5 backdrop-blur-3xl glow-border">
-        <div className="flex items-center gap-5">
-          <div className="relative group">
-            <div className="absolute inset-0 bg-indigo-500 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
-            <Logo size={56} className="relative z-10" />
-          </div>
-          <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-black text-white heading-title">
-              {greeting}، <span className="text-indigo-400">{userName.split(' ')[0]}</span>
-            </h1>
-            <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-500">
-              {new Date().toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </p>
-          </div>
-        </div>
-        <button 
-          onClick={() => dispatch({ type: 'TOGGLE_FLOW' })}
-          className="w-12 h-12 glass-panel rounded-2xl flex items-center justify-center text-slate-400 hover:text-white transition-all premium-card"
-        >
-          <Icons.Settings />
-        </button>
-      </header>
+    <div className="min-h-screen px-8 pt-24 max-w-md mx-auto flex flex-col items-center animate-in fade-in duration-1000">
+      
+      {/* State A: The Nucleus (Decision Point) */}
+      {!isCommitting ? (
+        <section className="w-full flex flex-col items-center text-center space-y-16">
+          <header className="space-y-3">
+             <h3 className="text-[10px] font-black uppercase tracking-[0.6em] text-zinc-600">الأولوية القصوى حالياً</h3>
+             {currentTask ? (
+               <h1 className="text-5xl font-black text-white tracking-tighter leading-none px-4">
+                 {currentTask.title}
+               </h1>
+             ) : (
+               <h1 className="text-4xl font-black text-zinc-800 tracking-tighter">هدوء تام...</h1>
+             )}
+          </header>
 
-      {/* Mental Capacity Monitor */}
-      <section className="glass-panel p-10 rounded-[48px] border-white/5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-[60px] rounded-full -mr-16 -mt-16"></div>
-        
-        <div className="flex justify-between items-start mb-10 relative z-10">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${load > 80 ? 'bg-rose-500' : 'bg-indigo-500'}`}></span>
-              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500">مؤشر السعة الذهنية</h3>
+          {currentTask && (
+            <div className="w-full space-y-12">
+              <button 
+                onClick={handleStartCommitment}
+                className="w-full py-8 bg-zinc-100 text-zinc-900 rounded-[40px] font-black text-sm uppercase tracking-[0.3em] shadow-[0_30px_60px_-15px_rgba(255,255,255,0.1)] hover:scale-[1.03] active:scale-95 transition-all"
+              >
+                ابدأ الالتزام
+              </button>
+              
+              <div className="flex flex-col items-center gap-4 opacity-30 hover:opacity-100 transition-opacity">
+                 <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.4em]">
+                   {upcomingCount} مهام في الانتظار
+                 </p>
+                 <div className="w-px h-12 bg-gradient-to-b from-zinc-500 to-transparent" />
+              </div>
             </div>
-            <p className="text-xl font-black text-white/90 leading-relaxed max-w-[280px]">
-              {load > 85 ? 'تجاوزت حد الأمان. ركز على الضروريات فقط.' : load > 60 ? 'يوم منتج، حافظ على وتيرتك.' : 'لديك متسع من الطاقة للإبداع.'}
-            </p>
-          </div>
-          <div className="text-right">
-            <div className={`text-6xl font-black tracking-tighter ${load > 85 ? 'text-rose-400' : 'text-indigo-400'}`}>
-              {load}<span className="text-xl opacity-30 ml-1">%</span>
-            </div>
-            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest block mt-1">Mental Load</span>
-          </div>
-        </div>
-        
-        <div className="relative h-3 w-full bg-white/5 rounded-full overflow-hidden border border-white/[0.02]">
-          <div 
-            className={`h-full rounded-full transition-all duration-[2500ms] cubic-bezier(0.16, 1, 0.3, 1) shadow-[0_0_20px_rgba(99,102,241,0.4)] ${load > 85 ? 'bg-gradient-to-l from-rose-500 to-rose-400' : 'bg-gradient-to-l from-indigo-500 to-violet-500'}`}
-            style={{ width: `${load}%` }}
-          />
-        </div>
-      </section>
-
-      {/* Intention Input */}
-      <section className="animate-in slide-in-from-bottom-6 duration-1000 delay-200">
-        <form onSubmit={handleIntentionSubmit} className="relative group">
-          <div className="absolute right-7 top-1/2 -translate-y-1/2 text-indigo-500/40 group-focus-within:text-indigo-400 transition-colors">
-            <Icons.Plus />
-          </div>
-          <input 
-            type="text"
-            placeholder="ما هي نيتك الأساسية الآن؟"
-            value={intention}
-            onChange={(e) => setIntention(e.target.value)}
-            className="w-full glass-panel bg-white/[0.02] border-white/5 focus:border-indigo-500/30 rounded-[35px] px-16 py-7 font-bold text-white placeholder:text-slate-600 outline-none transition-all text-lg shadow-inner focus:bg-white/[0.04]"
-          />
-        </form>
-      </section>
-
-      {/* Task Roadmap */}
-      <section className="space-y-10 pb-20">
-        <div className="flex items-center justify-between px-3">
-          <div className="flex items-center gap-5">
-             <div className="w-1.5 h-10 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
-             <h2 className="text-2xl font-black text-white tracking-tight">خارطة اليوم</h2>
-          </div>
-          <button 
-            onClick={() => dispatch({ type: 'TOGGLE_FLOW' })}
-            className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${isFlowStateActive ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/20' : 'bg-white/5 text-slate-500 border-white/5 hover:bg-white/10'}`}
-          >
-            {isFlowStateActive ? 'وضع التدفق: نشط' : 'بدء التدفق العميق'}
-          </button>
-        </div>
-
-        <div className="grid gap-6">
-          {displayedTasks.length === 0 ? (
-            <div className="py-28 text-center space-y-6 opacity-20 group">
-               <div className="text-7xl group-hover:scale-110 transition-transform duration-1000">🌌</div>
-               <p className="text-sm font-black uppercase tracking-[0.4em] text-slate-400">الفضاء الذهني خالٍ تماماً</p>
-            </div>
-          ) : (
-            displayedTasks.map((task) => (
-              <TaskCard 
-                key={task.id} 
-                task={task} 
-                onToggle={toggleTask} 
-                onZen={toggleZenMode} 
-                onDefer={(id) => trackAction('task_postpone', { id })}
-              />
-            ))
           )}
-        </div>
-      </section>
+        </section>
+      ) : (
+        /* State B: The Commitment Bridge (Implementation Intention) */
+        <section className="w-full space-y-12 animate-in slide-in-from-bottom-12 duration-500">
+          <div className="space-y-4 text-center">
+            <h2 className="text-2xl font-black text-white tracking-tight">ما هي أول دقيقتين؟</h2>
+            <p className="text-sm text-zinc-500 font-medium leading-relaxed">
+              التسويف ينتهي بالبداية المجهرية. اكتب أول فعل بسيط ستقوم به الآن (مثلاً: فتح الكتاب).
+            </p>
+          </div>
+
+          <div className="relative">
+            <input 
+              autoFocus
+              type="text"
+              value={microWin}
+              onChange={(e) => setMicroWin(e.target.value)}
+              placeholder="مثلاً: فتح ملف البحث..."
+              className="w-full bg-zinc-900 border-b-2 border-zinc-700 focus:border-white py-6 text-xl font-bold text-white placeholder:text-zinc-800 outline-none transition-all"
+            />
+          </div>
+
+          <div className="flex gap-4">
+            <button 
+              onClick={() => setIsCommitting(false)}
+              className="flex-1 py-5 text-[10px] font-black text-zinc-600 uppercase tracking-widest"
+            >
+              تراجع
+            </button>
+            <button 
+              onClick={confirmCommitment}
+              disabled={!microWin.trim()}
+              className="flex-[2] py-5 bg-white text-zinc-900 rounded-2xl font-black text-[10px] uppercase tracking-widest disabled:opacity-20"
+            >
+              دخول وضع التركيز
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Psychological Load (Silent Feedback) */}
+      <div className="fixed bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-10 opacity-20">
+         <div className="flex flex-col items-center">
+            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">الحمل</span>
+            <span className="text-xs font-bold text-zinc-300">{load}%</span>
+         </div>
+         <div className="w-1.5 h-1.5 rounded-full bg-zinc-800" />
+         <div className="flex flex-col items-center">
+            <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">الوضوح</span>
+            <span className="text-xs font-bold text-zinc-300">{100 - load}%</span>
+         </div>
+      </div>
     </div>
   );
 };
