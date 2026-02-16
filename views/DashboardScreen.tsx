@@ -20,15 +20,16 @@ const DashboardScreen: React.FC = () => {
     const hour = new Date().getHours();
     if (hour < 5) return "ليلة هادئة";
     if (hour < 12) return "صباح مشرق";
-    if (hour < 18) return "يوم منتج";
+    if (hour < 18) return "يوم مليء بالإنجاز";
     return "مساء هادئ";
   }, []);
 
   const displayedTasks = useMemo(() => {
-    if (load > 90) {
-      return tasks.filter(t => t.priority === Priority.HIGH || t.category === Category.PRAYER || t.isCompleted);
+    const active = tasks.filter(t => !t.isCompleted);
+    if (load > 85) {
+      return active.filter(t => t.priority === Priority.HIGH || t.category === Category.PRAYER);
     }
-    return tasks.filter(t => !t.isCompleted).sort((a, b) => (b.priority === Priority.HIGH ? 1 : -1));
+    return active.sort((a, b) => (b.priority === Priority.HIGH ? 1 : -1));
   }, [tasks, load]);
 
   const handleIntentionSubmit = (e: React.FormEvent) => {
@@ -39,61 +40,65 @@ const DashboardScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen px-6 pt-16 max-w-2xl mx-auto space-y-10 animate-in fade-in duration-1000">
-      {/* Premium Header */}
-      <header className="flex justify-between items-center bg-white/5 p-6 rounded-[35px] border border-white/10 backdrop-blur-xl">
+    <div className="min-h-screen px-4 md:px-6 pt-12 md:pt-16 max-w-2xl mx-auto space-y-12 animate-in fade-in duration-700">
+      {/* Dynamic Header */}
+      <header className="flex justify-between items-center bg-white/[0.03] p-6 rounded-[40px] border border-white/5 backdrop-blur-3xl glow-border">
         <div className="flex items-center gap-5">
-          <div className="relative">
-            <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 animate-pulse"></div>
-            <Logo size={52} className="relative z-10" />
+          <div className="relative group">
+            <div className="absolute inset-0 bg-indigo-500 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
+            <Logo size={56} className="relative z-10" />
           </div>
-          <div className="space-y-0.5">
-            <h1 className="text-2xl font-black text-white leading-tight">
+          <div className="space-y-1">
+            <h1 className="text-2xl md:text-3xl font-black text-white heading-title">
               {greeting}، <span className="text-indigo-400">{userName.split(' ')[0]}</span>
             </h1>
-            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">
+            <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-500">
               {new Date().toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
           </div>
         </div>
-        <button className="w-11 h-11 glass-card rounded-2xl flex items-center justify-center text-slate-400 hover:text-white hover:border-indigo-500/30 transition-all">
+        <button 
+          onClick={() => dispatch({ type: 'TOGGLE_FLOW' })}
+          className="w-12 h-12 glass-panel rounded-2xl flex items-center justify-center text-slate-400 hover:text-white transition-all premium-card"
+        >
           <Icons.Settings />
         </button>
       </header>
 
-      {/* Intelligence Gauge - Redesigned */}
-      <section className="glass-card p-10 rounded-[45px] relative overflow-hidden group border-white/5">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent"></div>
+      {/* Mental Capacity Monitor */}
+      <section className="glass-panel p-10 rounded-[48px] border-white/5 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-[60px] rounded-full -mr-16 -mt-16"></div>
         
-        <div className="flex justify-between items-start mb-8">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">تحليل المجهود الذهني</h3>
+        <div className="flex justify-between items-start mb-10 relative z-10">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${load > 80 ? 'bg-rose-500' : 'bg-indigo-500'}`}></span>
+              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500">مؤشر السعة الذهنية</h3>
             </div>
-            <p className="text-xl font-black text-white/90">
-              {load > 85 ? 'حالة إجهاد حرجة - توقف!' : load > 60 ? 'يوم مكثف، استمر بذكاء' : 'طاقة ذهنية صافية'}
+            <p className="text-xl font-black text-white/90 leading-relaxed max-w-[280px]">
+              {load > 85 ? 'تجاوزت حد الأمان. ركز على الضروريات فقط.' : load > 60 ? 'يوم منتج، حافظ على وتيرتك.' : 'لديك متسع من الطاقة للإبداع.'}
             </p>
           </div>
           <div className="text-right">
-            <div className={`text-5xl font-black tracking-tighter ${load > 85 ? 'text-rose-400' : 'text-indigo-400'}`}>
-              {load}<span className="text-xl opacity-40">%</span>
+            <div className={`text-6xl font-black tracking-tighter ${load > 85 ? 'text-rose-400' : 'text-indigo-400'}`}>
+              {load}<span className="text-xl opacity-30 ml-1">%</span>
             </div>
+            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest block mt-1">Mental Load</span>
           </div>
         </div>
         
-        <div className="relative h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+        <div className="relative h-3 w-full bg-white/5 rounded-full overflow-hidden border border-white/[0.02]">
           <div 
-            className={`h-full rounded-full transition-all duration-[2000ms] cubic-bezier(0.23, 1, 0.32, 1) shadow-[0_0_20px_rgba(99,102,241,0.4)] ${load > 85 ? 'bg-rose-500' : 'bg-indigo-500'}`}
+            className={`h-full rounded-full transition-all duration-[2500ms] cubic-bezier(0.16, 1, 0.3, 1) shadow-[0_0_20px_rgba(99,102,241,0.4)] ${load > 85 ? 'bg-gradient-to-l from-rose-500 to-rose-400' : 'bg-gradient-to-l from-indigo-500 to-violet-500'}`}
             style={{ width: `${load}%` }}
           />
         </div>
       </section>
 
-      {/* Modern Intention Form */}
+      {/* Intention Input */}
       <section className="animate-in slide-in-from-bottom-6 duration-1000 delay-200">
         <form onSubmit={handleIntentionSubmit} className="relative group">
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 text-indigo-500/40 group-focus-within:text-indigo-400 transition-colors">
+          <div className="absolute right-7 top-1/2 -translate-y-1/2 text-indigo-500/40 group-focus-within:text-indigo-400 transition-colors">
             <Icons.Plus />
           </div>
           <input 
@@ -101,31 +106,31 @@ const DashboardScreen: React.FC = () => {
             placeholder="ما هي نيتك الأساسية الآن؟"
             value={intention}
             onChange={(e) => setIntention(e.target.value)}
-            className="w-full glass-card bg-white/5 border border-white/5 focus:border-indigo-500/30 rounded-[30px] px-14 py-6 font-bold text-white placeholder:text-slate-600 outline-none transition-all text-lg shadow-inner"
+            className="w-full glass-panel bg-white/[0.02] border-white/5 focus:border-indigo-500/30 rounded-[35px] px-16 py-7 font-bold text-white placeholder:text-slate-600 outline-none transition-all text-lg shadow-inner focus:bg-white/[0.04]"
           />
         </form>
       </section>
 
-      {/* Task Section - Refined Hierarchy */}
-      <section className="space-y-8 pb-12">
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-4">
-             <div className="w-1.5 h-8 bg-indigo-500 rounded-full"></div>
-             <h2 className="text-2xl font-black text-white tracking-tight">المسار الحالي</h2>
+      {/* Task Roadmap */}
+      <section className="space-y-10 pb-20">
+        <div className="flex items-center justify-between px-3">
+          <div className="flex items-center gap-5">
+             <div className="w-1.5 h-10 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+             <h2 className="text-2xl font-black text-white tracking-tight">خارطة اليوم</h2>
           </div>
           <button 
             onClick={() => dispatch({ type: 'TOGGLE_FLOW' })}
-            className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${isFlowStateActive ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'}`}
+            className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${isFlowStateActive ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/20' : 'bg-white/5 text-slate-500 border-white/5 hover:bg-white/10'}`}
           >
-            {isFlowStateActive ? 'وضع التركيز: نشط' : 'بدء التدفق العميق'}
+            {isFlowStateActive ? 'وضع التدفق: نشط' : 'بدء التدفق العميق'}
           </button>
         </div>
 
-        <div className="grid gap-5">
+        <div className="grid gap-6">
           {displayedTasks.length === 0 ? (
-            <div className="py-24 text-center space-y-4 opacity-30">
-               <div className="text-6xl animate-bounce">✨</div>
-               <p className="text-sm font-black uppercase tracking-[0.3em]">الفضاء الذهني صافٍ تماماً</p>
+            <div className="py-28 text-center space-y-6 opacity-20 group">
+               <div className="text-7xl group-hover:scale-110 transition-transform duration-1000">🌌</div>
+               <p className="text-sm font-black uppercase tracking-[0.4em] text-slate-400">الفضاء الذهني خالٍ تماماً</p>
             </div>
           ) : (
             displayedTasks.map((task) => (

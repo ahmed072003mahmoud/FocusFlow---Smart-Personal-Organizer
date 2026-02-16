@@ -1,5 +1,5 @@
 
-import React, { Component, useState, useEffect, Suspense, lazy, ReactNode } from 'react';
+import React, { useState, useEffect, Suspense, lazy, ReactNode } from 'react';
 import { useApp, AppProvider } from './AppContext';
 import SplashScreen from './views/SplashScreen';
 import LoginScreen from './views/LoginScreen';
@@ -19,16 +19,19 @@ const Habits = lazy(() => import('./views/HabitsScreen'));
 interface EBProps { children?: ReactNode; }
 interface EBState { hasError: boolean; }
 
-// Fixed: Explicitly using Component from named imports and ensuring generic types are applied correctly.
-class ErrorBoundary extends Component<EBProps, EBState> {
+// Fixed: Using React.Component and explicitly declaring the state property to resolve property existence errors in TypeScript.
+class ErrorBoundary extends React.Component<EBProps, EBState> {
+  // Explicitly declaring state to ensure it's recognized by the class instance
+  public state: EBState = { hasError: false };
+
   constructor(props: EBProps) {
     super(props);
-    // Initializing state which is inherited from Component
-    this.state = { hasError: false };
   }
+  
   static getDerivedStateFromError() { return { hasError: true }; }
+  
   render() {
-    // Accessing state inherited from Component
+    // Accessing state inherited from React.Component
     if (this.state.hasError) return (
       <div className="h-screen flex flex-col items-center justify-center p-12 text-center bg-[#020617]">
         <span className="text-6xl mb-8 animate-bounce">💆‍♂️</span>
@@ -37,7 +40,7 @@ class ErrorBoundary extends Component<EBProps, EBState> {
         <button onClick={() => window.location.reload()} className="mt-10 px-10 py-4 bg-indigo-600 text-white rounded-[25px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20">إعادة المحاولة</button>
       </div>
     );
-    // Accessing props inherited from Component
+    // Accessing props inherited from React.Component
     return this.props.children;
   }
 }

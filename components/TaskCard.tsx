@@ -21,49 +21,53 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onToggle, onZen, onDefer }) =
 
   return (
     <div className={`
-      relative p-6 rounded-[35px] glass-card transition-all duration-500 flex items-center gap-6 group glow-border
-      ${task.isCompleted ? 'opacity-30 grayscale scale-[0.98]' : 'hover:scale-[1.02] hover:bg-white/5'}
+      relative p-7 rounded-[40px] glass-panel transition-all duration-700 flex items-center gap-7 group premium-card
+      ${task.isCompleted ? 'opacity-30 grayscale scale-[0.98]' : 'hover:bg-white/[0.04]'}
     `}>
-      {/* Checkbox Interface */}
+      {/* Precision Checkbox */}
       <button 
         onClick={() => onToggle(task.id)}
         className={`
-          w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all border-2
-          ${task.isCompleted ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-transparent border-white/10 group-hover:border-indigo-500/50'}
+          w-14 h-14 rounded-[22px] flex items-center justify-center flex-shrink-0 transition-all border-2
+          ${task.isCompleted ? 'bg-indigo-500 border-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-transparent border-white/10 group-hover:border-indigo-500/40'}
         `}
       >
-        {task.isCompleted ? <Icons.Check /> : <div className="w-1.5 h-1.5 rounded-full bg-white/20 group-hover:bg-indigo-400 transition-colors" />}
+        {task.isCompleted ? <Icons.Check /> : <div className="w-2 h-2 rounded-full bg-white/20 group-hover:bg-indigo-400 transition-colors animate-pulse" />}
       </button>
 
-      {/* Task Content */}
+      {/* Task Meta & Title */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-3 mb-2">
-          <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg ${categoryConfig.bg} ${categoryConfig.color}`}>
+        <div className="flex items-center gap-3 mb-2.5">
+          <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border border-white/5 ${categoryConfig.bg} ${categoryConfig.color}`}>
             {categoryConfig.icon} {categoryConfig.label}
           </span>
           {task.priority === Priority.HIGH && (
-            <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400">
-              عاجل
+            <span className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              أولوية قصوى
             </span>
           )}
         </div>
         
-        <h3 className={`text-lg font-black text-white/90 truncate tracking-tight transition-all ${task.isCompleted ? 'line-through text-slate-500' : ''}`}>
+        <h3 className={`text-xl font-bold text-white/95 truncate tracking-tight transition-all ${task.isCompleted ? 'line-through text-slate-600' : ''}`}>
           {task.title}
         </h3>
         
-        <div className="flex items-center gap-3 mt-1.5 text-slate-500">
-           <p className="text-[10px] font-bold uppercase tracking-widest">{task.time || '09:00 AM'}</p>
-           <span className="text-white/10">•</span>
-           <p className="text-[10px] font-bold uppercase tracking-widest">{task.estimatedMinutes} دقيقة</p>
+        <div className="flex items-center gap-4 mt-2.5 text-slate-500">
+           <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">{task.time || 'إيقاع حر'}</span>
+           </div>
+           <span className="text-white/10 text-xs">•</span>
+           <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">{task.estimatedMinutes} دقيقة</span>
+           </div>
         </div>
       </div>
 
-      {/* Focus Action */}
+      {/* Deep Focus Trigger */}
       {!task.isCompleted && (
         <button 
           onClick={() => onZen(task.id)}
-          className="w-11 h-11 rounded-[20px] bg-white/5 text-slate-400 flex items-center justify-center hover:bg-indigo-500 hover:text-white transition-all shadow-inner active:scale-90"
+          className="w-12 h-12 rounded-[22px] bg-white/[0.03] text-slate-500 flex items-center justify-center hover:bg-indigo-500 hover:text-white transition-all shadow-inner active:scale-90 border border-white/5"
         >
           <Icons.AI />
         </button>

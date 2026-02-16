@@ -3,7 +3,7 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>FocusFlow | الوعي الإنتاجي</title>
     <link rel="manifest" href="manifest.json" />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,77 +12,87 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
       :root {
-        --bg-deep: #020617;
-        --accent-indigo: #6366F1;
-        --accent-violet: #8B5CF6;
-        --accent-lime: #ADFF2F;
-        --glass-surface: rgba(255, 255, 255, 0.03);
+        --deep-space: #020617;
+        --accent-primary: #6366F1;
+        --accent-secondary: #8B5CF6;
+        --glow-green: #ADFF2F;
+        --glass-bg: rgba(15, 23, 42, 0.7);
         --glass-border: rgba(255, 255, 255, 0.08);
       }
       
       body {
         font-family: 'Noto Sans Arabic', 'Plus Jakarta Sans', sans-serif;
-        background-color: var(--bg-deep);
+        background-color: var(--deep-space);
         color: #F8FAFC;
         overflow-x: hidden;
         -webkit-font-smoothing: antialiased;
+        scrollbar-width: none;
       }
 
-      /* Ultra-Smooth Aurora Background */
-      .liquid-canvas {
+      body::-webkit-scrollbar { display: none; }
+
+      /* Advanced Ambient Background */
+      .ambient-field {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
+        inset: 0;
         z-index: -1;
-        background: radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.15), transparent 40%),
-                    radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.15), transparent 40%),
-                    #020617;
+        background: radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.08), transparent 40%),
+                    radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.08), transparent 40%);
       }
 
-      .floating-orb {
+      .animated-blob {
         position: absolute;
-        border-radius: 50%;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
         filter: blur(80px);
-        opacity: 0.4;
-        animation: float-orbit 25s infinite alternate ease-in-out;
+        animation: drift 30s infinite alternate ease-in-out;
       }
 
-      .orb-1 { width: 400px; height: 400px; background: var(--accent-indigo); top: -10%; left: -10%; }
-      .orb-2 { width: 300px; height: 300px; background: var(--accent-violet); bottom: -5%; right: -5%; animation-delay: -5s; }
-
-      @keyframes float-orbit {
-        0% { transform: translate(0, 0) scale(1); }
-        100% { transform: translate(100px, 50px) scale(1.1); }
+      @keyframes drift {
+        from { transform: translate(-10%, -10%) rotate(0deg); }
+        to { transform: translate(20%, 10%) rotate(180deg); }
       }
 
-      .glass-card {
-        background: rgba(15, 23, 42, 0.6);
-        backdrop-filter: blur(40px);
-        -webkit-backdrop-filter: blur(40px);
+      /* Premium Glassmorphism Classes */
+      .glass-panel {
+        background: var(--glass-bg);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
         border: 1px solid var(--glass-border);
-        box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
       }
 
-      .glow-border:hover {
-        border-color: rgba(99, 102, 241, 0.4);
-        box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+      .glow-border {
+        position: relative;
+        overflow: hidden;
+      }
+      .glow-border::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border: 1px solid transparent;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), transparent) border-box;
+        mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+        mask-composite: exclude;
+        pointer-events: none;
       }
 
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-      input, button { transition: all 0.4s cubic-bezier(0.2, 1, 0.3, 1); }
-      
-      .active-tab {
-        background: var(--accent-indigo);
-        color: white;
-        box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+      .premium-card {
+        transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+      }
+      .premium-card:hover {
+        transform: translateY(-4px) scale(1.01);
+        border-color: rgba(99, 102, 241, 0.3);
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.1);
       }
 
       /* Typography Polish */
-      h1, h2, h3 { letter-spacing: -0.02em; }
+      .heading-title {
+        letter-spacing: -0.03em;
+        line-height: 1.2;
+      }
+      
+      .text-balance { text-wrap: balance; }
     </style>
     <script type="importmap">
     {
@@ -100,9 +110,8 @@
     </script>
   </head>
   <body>
-    <div class="liquid-canvas">
-      <div class="floating-orb orb-1"></div>
-      <div class="floating-orb orb-2"></div>
+    <div class="ambient-field">
+      <div class="animated-blob"></div>
     </div>
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
