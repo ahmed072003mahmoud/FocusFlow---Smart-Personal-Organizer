@@ -1,11 +1,13 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback } from 'react';
-import { Task, AppState, Priority, BehaviorEvent, WeekMode, Badge, Habit, Idea, BehaviorType, Category, PlanningMood, AppLanguage } from './types';
+import { Task, AppState, Priority, BehaviorEvent, WeekMode, Badge, Habit, Idea, BehaviorType, Category, PlanningMood, AppLanguage, FocusSession } from './types';
 import { INITIAL_HABITS, DEFAULT_CHALLENGES, TRANSLATIONS } from './constants';
 import { INITIAL_BADGES, GamificationEngine } from './utils/GamificationEngine';
 import { BehaviorEngine } from './utils/BehaviorEngine';
 import { AIOrchestrationLayer } from './utils/AIOrchestrationLayer';
 import { SmartTaskParser } from './utils/SmartTaskParser';
+import { StorageEngine } from './utils/StorageEngine';
+import { PriorityEngine } from './utils/PriorityEngine';
 
 type Action = 
   | { type: 'SET_STATE'; payload: Partial<AppState> }
@@ -18,6 +20,7 @@ type Action =
   | { type: 'TOGGLE_HABIT'; payload: string }
   | { type: 'ADD_IDEA'; payload: Idea }
   | { type: 'DELETE_IDEA'; payload: string }
+  | { type: 'ADD_FOCUS_SESSION'; payload: FocusSession }
   | { type: 'SET_LANGUAGE'; payload: AppLanguage };
 
 const STORAGE_KEY = 'focus_flow_v12_final';
@@ -38,13 +41,15 @@ interface AppContextType extends AppState {
   toggleHabit: (id: string) => void;
   addIdea: (text: string) => void;
   deleteIdea: (id: string) => void;
-  // Added missing method to interface
   convertIdeaToTask: (id: string, mode: 'local' | 'flash' | 'pro') => Promise<void>;
   updateMood: (mood: PlanningMood) => void;
   setWeekMode: (mode: WeekMode) => void;
   setLanguage: (lang: AppLanguage) => void;
   toggleDarkMode: () => void;
   isFeatureUnlocked: (featureId: string) => boolean;
+  addFocusSession: (session: FocusSession) => void;
+  exportBackup: () => void;
+  importBackup: (file: File) => Promise<void>;
   load: number;
   t: (key: string) => string;
 }
@@ -61,12 +66,23 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'TOGGLE_ZEN': return { ...state, isZenModeActive: !!action.payload, zenTaskId: action.payload };
     case 'LOG_BEHAVIOR': return { ...state, behaviorHistory: [...state.behaviorHistory, action.payload] };
     case 'TOGGLE_HABIT':
+      const today = new Date().toISOString().split('T')[0];
       return {
         ...state,
-        habits: state.habits.map(h => h.id === action.payload ? { ...h, isCompletedToday: !h.isCompletedToday, streakCount: !h.isCompletedToday ? h.streakCount + 1 : Math.max(0, h.streakCount - 1) } : h)
+        habits: state.habits.map(h => {
+          if (h.id !== action.payload) return h;
+          const isMarkingDone = !h.isCompletedToday;
+          return { 
+            ...h, 
+            isCompletedToday: isMarkingDone, 
+            streakCount: isMarkingDone ? h.streakCount + 1 : Math.max(0, h.streakCount - 1),
+            history: { ...h.history, [today]: isMarkingDone }
+          };
+        })
       };
     case 'ADD_IDEA': return { ...state, ideas: [action.payload, ...state.ideas] };
     case 'DELETE_IDEA': return { ...state, ideas: state.ideas.filter(i => i.id !== action.payload) };
+    case 'ADD_FOCUS_SESSION': return { ...state, focusSessions: [action.payload, ...state.focusSessions] };
     case 'SET_LANGUAGE': return { ...state, language: action.payload };
     default: return state;
   }
@@ -74,9 +90,10 @@ function appReducer(state: AppState, action: Action): AppState {
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, null, () => {
+    // Initial sync is still from localStorage for immediate load, but StorageEngine handles IndexedDB backup
     const saved = localStorage.getItem(STORAGE_KEY);
     const fallback: AppState = {
-      tasks: [], habits: INITIAL_HABITS, challenges: DEFAULT_CHALLENGES, successLogs: [], ideas: [],
+      tasks: [], habits: INITIAL_HABITS, focusSessions: [], challenges: DEFAULT_CHALLENGES, successLogs: [], ideas: [],
       isLoggedIn: false, hasSeenOnboarding: false, isDarkMode: true, language: 'ar',
       userName: 'طالب ذكي', email: '', isGuest: false, behaviorHistory: [], badges: INITIAL_BADGES,
       isZenModeActive: false, zenTaskId: null, currentWeekMode: WeekMode.STANDARD,
@@ -90,60 +107,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? { ...fallback, ...JSON.parse(saved) } : fallback;
   });
 
-  // Sync Direction and Theme
+  // Sync to Storage (localStorage and IndexedDB)
   useEffect(() => {
     document.documentElement.dir = state.language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = state.language;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    StorageEngine.saveState(state).catch(console.error);
   }, [state]);
 
-  // AI Strategic Loop
+  // Load from IndexedDB on Mount
   useEffect(() => {
-    const checkStrategicCue = async () => {
-      const decision = await AIOrchestrationLayer.evaluateSituation({
-        tasks: state.tasks,
-        history: state.behaviorHistory,
-        persona: state.persona,
-        load: BehaviorEngine.calculatePsychologicalLoad(state.tasks)
-      });
-      if (decision && decision.type !== state.lastStrategicCue) {
-        dispatch({ type: 'SET_STATE', payload: { lastStrategicCue: decision.type as any } });
-      }
+    const loadDB = async () => {
+      const dbState = await StorageEngine.loadState();
+      if (dbState) dispatch({ type: 'SET_STATE', payload: dbState });
     };
-    const timer = setTimeout(checkStrategicCue, 5000);
-    return () => clearTimeout(timer);
-  }, [state.tasks, state.behaviorHistory]);
+    loadDB();
+  }, []);
 
   const setState = (payload: Partial<AppState>) => dispatch({ type: 'SET_STATE', payload });
   const logBehavior = (type: BehaviorType, metadata?: any) => dispatch({ type: 'LOG_BEHAVIOR', payload: { type, timestamp: new Date().toISOString(), metadata } });
   
-  const addTask = (t: any) => dispatch({ 
-    type: 'ADD_TASK', 
-    payload: { 
+  const addTask = (t: any) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    const newTask: Task = { 
       ...t, 
-      id: Math.random().toString(36).substr(2, 9), 
+      id, 
       createdAt: new Date().toISOString(), 
       postponedCount: 0, 
       isCompleted: false, 
-      priorityScore: t.priority === Priority.HIGH ? 80 : 40 
-    } 
-  });
+      priorityScore: 0 
+    };
+    newTask.priorityScore = PriorityEngine.calculateScore(newTask);
+    dispatch({ type: 'ADD_TASK', payload: newTask });
+  };
   
-  const updateTask = (t: Task) => dispatch({ type: 'UPDATE_TASK', payload: t });
+  const updateTask = (t: Task) => dispatch({ type: 'UPDATE_TASK', payload: { ...t, priorityScore: PriorityEngine.calculateScore(t) } });
   const deleteTask = (id: string) => dispatch({ type: 'DELETE_TASK', payload: id });
   
   const toggleTask = (id: string) => {
     const task = state.tasks.find(t => t.id === id);
     if (task) {
-      dispatch({ type: 'UPDATE_TASK', payload: { ...task, isCompleted: !task.isCompleted } });
-      if (!task.isCompleted) logBehavior('task_complete', { taskId: id });
+      const isCompleted = !task.isCompleted;
+      dispatch({ type: 'UPDATE_TASK', payload: { ...task, isCompleted } });
+      if (isCompleted) logBehavior('task_complete', { taskId: id });
     }
   };
   
   const deferTask = (id: string) => {
     const task = state.tasks.find(t => t.id === id);
     if (task) {
-      dispatch({ type: 'UPDATE_TASK', payload: { ...task, postponedCount: task.postponedCount + 1 } });
+      const updated = { ...task, postponedCount: task.postponedCount + 1 };
+      dispatch({ type: 'UPDATE_TASK', payload: { ...updated, priorityScore: PriorityEngine.calculateScore(updated) } });
       logBehavior('task_postpone', { taskId: id });
     }
   };
@@ -154,12 +168,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const toggleHabit = (id: string) => dispatch({ type: 'TOGGLE_HABIT', payload: id });
   const addIdea = (text: string) => dispatch({ type: 'ADD_IDEA', payload: { id: Math.random().toString(36).substr(2, 9), text, capturedAt: new Date().toISOString() } });
   const deleteIdea = (id: string) => dispatch({ type: 'DELETE_IDEA', payload: id });
+  const addFocusSession = (session: FocusSession) => {
+    dispatch({ type: 'ADD_FOCUS_SESSION', payload: session });
+    logBehavior('focus_session_complete', { sessionId: session.id, duration: session.actualSeconds });
+  };
 
-  // Added missing implementation for convertIdeaToTask
+  const exportBackup = () => StorageEngine.exportData(state);
+  const importBackup = async (file: File) => {
+    const newState = await StorageEngine.importData(file);
+    dispatch({ type: 'SET_STATE', payload: newState });
+  };
+
   const convertIdeaToTask = async (id: string, mode: 'local' | 'flash' | 'pro') => {
     const idea = state.ideas.find(i => i.id === id);
     if (!idea) return;
-
     let parsed: Partial<Task>;
     if (mode === 'local') {
       parsed = SmartTaskParser.parse(idea.text);
@@ -167,14 +189,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const result = await AIOrchestrationLayer.fastTaskAnalysis(idea.text);
       parsed = SmartTaskParser.parse(result || idea.text);
     } else {
-      // Pro mode
       const result = await AIOrchestrationLayer.deepThinkStrategicPivot(idea.text);
       parsed = SmartTaskParser.parse(result || idea.text);
     }
-
     addTask(parsed);
     deleteIdea(id);
-    logBehavior('use_ai', { mode, ideaId: id });
   };
 
   const updateMood = (mood: PlanningMood) => dispatch({ type: 'SET_STATE', payload: { persona: { ...state.persona, currentMood: mood } } });
@@ -200,6 +219,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...state, dispatch, setState, addTask, updateTask, toggleTask, deleteTask, deferTask,
       logBehavior, login, guestLogin, completeOnboarding, toggleHabit, addIdea, deleteIdea,
       convertIdeaToTask, updateMood, setWeekMode, setLanguage, toggleDarkMode, isFeatureUnlocked,
+      addFocusSession, exportBackup, importBackup,
       toggleZenMode: (id) => {
         dispatch({ type: 'TOGGLE_ZEN', payload: id });
         if (id) logBehavior('zen_mode_enter', { taskId: id });

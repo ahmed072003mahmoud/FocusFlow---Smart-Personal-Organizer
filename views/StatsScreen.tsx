@@ -1,57 +1,72 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useApp } from '../AppContext';
-import { BadgeComponent } from '../components/BadgeComponent';
+import { HabitHeatmap } from '../components/HabitHeatmap';
 
 const StatsScreen: React.FC = () => {
-  const { tasks, badges, behaviorHistory } = useApp();
+  const { tasks, habits, focusSessions, behaviorHistory } = useApp();
   
   const completedCount = tasks.filter(t => t.isCompleted).length;
-  const activeBadges = badges.filter(b => !b.isLocked);
+  const totalFocusMinutes = useMemo(() => {
+    return Math.round(focusSessions.reduce((acc, s) => acc + s.actualSeconds, 0) / 60);
+  }, [focusSessions]);
+
+  const avgSessionLength = useMemo(() => {
+    if (focusSessions.length === 0) return 0;
+    return Math.round(totalFocusMinutes / focusSessions.length);
+  }, [focusSessions, totalFocusMinutes]);
 
   return (
-    <div className="min-h-screen bg-black p-8 pt-24 pb-40 space-y-16">
+    <div className="min-h-screen bg-[#1E1E1E] p-8 pt-24 pb-40 space-y-16 overflow-y-auto no-scrollbar">
       <header className="space-y-2">
-        <h1 className="text-3xl font-light text-white tracking-tighter">الهوية السلوكية</h1>
-        <p className="text-zinc-600 text-[10px] uppercase tracking-widest font-black">تحليل المسار غير المنحاز</p>
+        <h1 className="text-4xl font-light text-white tracking-tighter">تحليل الأداء</h1>
+        <p className="text-[#717171] text-[10px] uppercase tracking-widest font-black">بصمتك الإنتاجية الرقمية</p>
       </header>
 
-      {/* Behavioral DNA - Abstract Grid */}
-      <section className="grid grid-cols-7 gap-1 h-32">
-        {Array.from({ length: 28 }).map((_, i) => {
-          const hasActivity = behaviorHistory.length > i;
-          return (
-            <div 
-              key={i} 
-              className={`rounded-sm transition-all duration-1000 ${hasActivity ? 'bg-zinc-200' : 'bg-zinc-900'}`} 
-            />
-          );
-        })}
-      </section>
+      {/* Overview Cards */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-[#252525] p-6 rounded-[32px] border border-white/5 space-y-1">
+           <p className="system-caption text-[8px] text-[#717171]">إجمالي التركيز</p>
+           <p className="text-2xl font-light text-white tracking-tighter">{totalFocusMinutes} <span className="text-[10px] font-bold">دقيقة</span></p>
+        </div>
+        <div className="bg-[#252525] p-6 rounded-[32px] border border-white/5 space-y-1">
+           <p className="system-caption text-[8px] text-[#717171]">متوسط الجلسة</p>
+           <p className="text-2xl font-light text-white tracking-tighter">{avgSessionLength} <span className="text-[10px] font-bold">دقيقة</span></p>
+        </div>
+      </div>
 
-      {/* Identity Badges - Minimalist list */}
+      {/* Habit DNA */}
       <section className="space-y-8">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">أوسمة الإتقان</h3>
-        <div className="grid grid-cols-1 gap-4">
-          {badges.map(badge => (
-            <div 
-              key={badge.id} 
-              className={`flex items-center gap-6 p-6 rounded-3xl border transition-all ${badge.isLocked ? 'border-zinc-900 opacity-20' : 'border-white/5 bg-zinc-950'}`}
-            >
-              <span className="text-3xl">{badge.icon}</span>
-              <div className="flex-1">
-                <h4 className="text-sm font-bold text-white">{badge.title}</h4>
-                <p className="text-[10px] text-zinc-500 font-medium">{badge.description}</p>
-              </div>
-              {!badge.isLocked && <div className="w-1 h-1 bg-white rounded-full" />}
+        <h3 className="system-caption text-[10px] font-black uppercase tracking-[0.3em] text-[#717171]">خرائط العادات</h3>
+        <div className="space-y-8">
+          {habits.map(habit => (
+            <div key={habit.id} className="bg-[#252525]/50 p-8 rounded-[40px] border border-white/5 space-y-6">
+               <h4 className="text-sm font-bold text-white">{habit.name}</h4>
+               <HabitHeatmap habit={habit} />
             </div>
           ))}
         </div>
       </section>
 
-      <section className="bg-zinc-950 p-8 rounded-[40px] border border-white/5 space-y-4">
-        <p className="text-xs text-zinc-400 leading-relaxed italic">
-          "تم رصد نمط إنجاز صباحي ثابت. قدرتك على الاستعادة بعد الانقطاعات تحسنت بنسبة 14% هذا الشهر."
+      {/* Behavioral ActivityDNA - Abstract Grid */}
+      <section className="space-y-4">
+        <h3 className="system-caption text-[#717171]">كثافة النشاط</h3>
+        <div className="grid grid-cols-7 gap-1 h-32">
+          {Array.from({ length: 28 }).map((_, i) => {
+            const hasActivity = behaviorHistory.length > i;
+            return (
+              <div 
+                key={i} 
+                className={`rounded-sm transition-all duration-1000 ${hasActivity ? 'bg-white opacity-40' : 'bg-[#252525]'}`} 
+              />
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="bg-white/5 p-8 rounded-[40px] border border-white/5 space-y-4">
+        <p className="text-xs text-[#C7C7C7] leading-relaxed italic opacity-80">
+          "تلاحظ الخوارزمية تحسناً في قدرتك على الحفاظ على تركيز ثابت. جلساتك المسائية أصبحت أكثر عمقاً بنسبة 12%."
         </p>
       </section>
     </div>

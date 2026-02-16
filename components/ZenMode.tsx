@@ -13,7 +13,7 @@ export const ZenMode: React.FC = () => {
   const task = tasks.find(t => t.id === zenTaskId);
   
   // Get the micro-win from behavior history
-  const latestEvent = behaviorHistory.filter(h => h.type === 'zen_mode_enter' as any).pop();
+  const latestEvent = behaviorHistory.filter(h => h.type === 'zen_mode_enter').pop();
   const microWin = latestEvent?.metadata?.microWin;
 
   useEffect(() => {
@@ -64,7 +64,10 @@ export const ZenMode: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#000] z-[1000] flex flex-col items-center justify-center p-12 overflow-hidden animate-in fade-in duration-1000">
+    <div className="fixed inset-0 bg-[#000] z-[1000] flex flex-col items-center justify-center p-12 overflow-hidden animate-in fade-in zoom-in duration-1000">
+      {/* Radial Sweep Animation on Entrance */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent animate-[pulse_6s_infinite] opacity-20 pointer-events-none" />
+
       {/* Background Breathing Pulse */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className={`
@@ -73,44 +76,45 @@ export const ZenMode: React.FC = () => {
         `} />
       </div>
 
-      <div className="relative z-10 text-center space-y-20 max-w-lg">
+      <div className="relative z-10 text-center space-y-16 max-w-lg w-full">
         <header className="space-y-6">
           <div className="space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-[0.6em] text-zinc-700">المهمة الكبيرة</span>
-            <h1 className="text-3xl font-black text-white leading-tight opacity-40">{task.title}</h1>
+            <span className="text-[10px] font-black uppercase tracking-[0.6em] text-zinc-800">المهمة الكبيرة</span>
+            <h1 className="text-3xl font-light text-white leading-tight opacity-40 px-4">{task.title}</h1>
           </div>
           
-          {seconds < 120 && microWin && (
-            <div className="animate-in fade-in zoom-in duration-1000">
-               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500">ابدأ بـ</span>
-               <h2 className="text-2xl font-black text-white italic mt-2">"{microWin}"</h2>
+          {seconds < 120 && (
+            <div className="animate-in fade-in zoom-in slide-in-from-top-4 duration-1000">
+               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-700">وضع التدفق الذهني</span>
+               {microWin && <h2 className="text-xl font-light text-white italic mt-2">"{microWin}"</h2>}
             </div>
           )}
         </header>
 
-        <div className="text-[140px] font-thin tracking-tighter text-zinc-900 select-none">
+        <div className="text-[100px] sm:text-[140px] font-thin tracking-tighter text-zinc-900 select-none transition-all duration-700">
           {Math.floor(seconds / 60)}:{(seconds % 60).toString().padStart(2, '0')}
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-8 w-full">
           {!isExiting ? (
             <button 
               onClick={() => { toggleTask(task.id); toggleZenMode(null); }}
-              className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.6em] hover:text-white transition-colors"
+              className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.6em] hover:text-white transition-colors bg-white/5 px-8 py-4 rounded-full"
             >
-              تم الإنجاز (خروج)
+              تم الإنجاز
             </button>
           ) : (
-            <div className="bg-zinc-900/50 p-10 rounded-[50px] border border-white/5 animate-in slide-in-from-bottom duration-500 space-y-6">
-              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">أدخل {targetCode} للفك</span>
+            <div className="bg-zinc-900/50 p-10 rounded-[50px] border border-white/5 animate-in slide-in-from-bottom duration-500 space-y-6 w-full max-w-xs mx-auto">
+              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">أدخل الرمز {targetCode} للمتابعة</span>
               <input 
                 autoFocus
                 maxLength={4}
                 value={exitCode}
                 onChange={e => setExitCode(e.target.value)}
-                className="w-full text-center text-4xl font-black bg-transparent text-white border-none focus:ring-0"
+                className="w-full text-center text-4xl font-black bg-transparent text-white border-none focus:ring-0 placeholder-zinc-800"
+                placeholder="0000"
               />
-              <button onClick={handleExitConfirm} className="w-full py-4 text-[10px] font-black text-zinc-300 uppercase">فك الحصار الذهني</button>
+              <button onClick={handleExitConfirm} className="w-full py-4 text-[10px] font-black text-zinc-300 uppercase bg-white/10 rounded-2xl">خروج الآن</button>
             </div>
           )}
           

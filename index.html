@@ -12,12 +12,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Arabic:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
       :root {
-        --void: #000000;
-        --obsidian: #050505;
-        --zinc-950: #09090B;
-        --zinc-800: #27272A;
-        --zinc-400: #A1A1AA;
+        --void: #1E1E1E;
+        --obsidian: #252525;
+        --zinc-950: #1a1a1a;
+        --zinc-800: #333333;
+        --zinc-400: #C7C7C7;
         --pure-white: #FFFFFF;
+        
+        /* Micro-colors */
+        --color-success: #4CAF50;
+        --color-urgent: #FF9800;
+        --color-overdue: #F44336;
+        --color-text-dim: #717171;
       }
       
       body {
@@ -26,42 +32,42 @@
         color: var(--zinc-400);
         overflow-x: hidden;
         -webkit-font-smoothing: antialiased;
-        transition: background-color 1s ease;
-      }
-
-      /* Success State: Perfect Symmetry Filter */
-      .state-success {
-        filter: contrast(1.1) brightness(1.1);
-      }
-
-      /* Failure/Overload State: Diffusion */
-      .state-overload {
-        filter: grayscale(1) blur(0.5px);
-        opacity: 0.8;
+        transition: background-color 0.5s ease, color 0.5s ease;
       }
 
       .heading-title {
-        letter-spacing: -0.06em;
-        font-weight: 900;
+        letter-spacing: -0.04em;
+        font-weight: 800;
+        color: var(--pure-white);
       }
 
       .system-caption {
-        letter-spacing: 0.6em;
+        letter-spacing: 0.4em;
         text-transform: uppercase;
-        font-weight: 900;
-        font-size: 10px;
-        opacity: 0.4;
+        font-weight: 800;
+        font-size: 9px;
+        opacity: 0.5;
+        color: var(--color-text-dim);
       }
 
-      /* Hide UI during high focus */
       .ui-stealth {
         transition: opacity 0.5s ease;
       }
       .ui-stealth:not(:hover) {
-        opacity: 0.1;
+        opacity: 0.2;
       }
 
       ::-webkit-scrollbar { width: 0px; }
+      
+      /* Subtle card glass effect for monochrome */
+      .monochrome-card {
+        background: var(--obsidian);
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        transition: all 0.3s ease;
+      }
+      .monochrome-card:hover {
+        border-color: rgba(255, 255, 255, 0.08);
+      }
     </style>
   <script type="importmap">
 {

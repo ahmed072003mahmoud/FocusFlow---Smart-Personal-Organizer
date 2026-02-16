@@ -1,18 +1,33 @@
 
-# 🧬 FocusFlow: Ethical Design Manifesto
+# 🧬 FocusFlow: Smart Personal Organizer
 
-## 1. Anti-Features (What we refuse to build)
-- **No Streaks**: We reject the "broken streak" guilt. Consistency is measured by quality, not consecutive days.
-- **No Social Comparison**: Your productivity is private. No leaderboards or competitive ranking.
-- **No "Overdue" Red**: Tasks are never "late"; they are simply "unmet expectations" that need rescheduling.
-- **No Tutorial Overload**: Complexity is revealed only when the user's behavior signals readiness.
+FocusFlow is an ethically designed, AI-powered productivity system for students and high-performers who value deep work and psychological balance over vanity metrics.
 
-## 2. Ethical Notification Logic
-- **Forbidden Hours**: No notifications between 10 PM and 7 AM unless explicitly requested for "Night Owl" mode.
-- **Silence over Noise**: If the user is in "Zen Mode," all system interruptions are physically blocked.
-- **Contextual Reminders**: Notifications adapt to energy levels. If the user is "Tired," the app suggests rest instead of a task.
+## 🌟 Product Vision
+We believe productivity isn't about doing more; it's about being aware of what matters. FocusFlow uses a "Monochrome Logic" UI to reduce visual fatigue and a "Cognitive Load" engine to prevent burnout.
 
-## 3. Design Success Metrics (Non-Vanity)
-- **Friction to Action Ratio**: How many seconds between opening the app and starting a Zen Session? (Target: < 5s).
-- **Recovery Rate**: How quickly does a user return after a 2-day break without feeling overwhelmed?
-- **Cognitive Load Balance**: Percentage of sessions spent in "Flow" vs. "Organizing."
+## 🚀 User Journey
+1. **Clear the Mind**: Use "Brain Dump" to offload mental clutter. AI parses these into structured tasks.
+2. **Dynamic Priority**: The engine scores tasks based on priority, deadlines, and past behavior.
+3. **Deep Work**: Enter "Zen Mode" with a Pomodoro timer and ambient sounds.
+4. **DNA Mapping**: Visualize your behavioral patterns through monthly heatmaps and identity badges.
+
+## 🛠 Tech Stack
+- **Framework**: React 19 + TypeScript (ESM modules)
+- **Styling**: Tailwind CSS (Monochrome Design System)
+- **AI Engine**: Google Gemini API (Flash Lite for parsing, Pro for strategy)
+- **Storage**: IndexedDB (Primary) + LocalStorage (Hydration)
+- **Privacy**: Local-first processing via Web Workers
+- **Gamification**: Custom Behavior & Experience Engines
+
+## 🗺 Roadmap
+- **Phase 1 (MVP)**: Task logic, basic habits, local storage.
+- **Phase 2 (AI Integration)**: Strategic analysis, voice-to-task parsing.
+- **Phase 3 (Analytics)**: Behavioral heatmaps, focus session tracking, DNA stats.
+- **Phase 4 (PWA & Offline)**: Installable app, full offline functionality with IndexedDB.
+- **Phase 5 (Cloud Sync)**: Optional end-to-end encrypted backup.
+
+## 🛡 Ethical Manifesto
+- No streaks for the sake of anxiety.
+- No "Overdue" red unless critical.
+- Absolute data privacy: your brain dump stays on your device.

@@ -22,8 +22,19 @@ export enum WeekMode {
   REVIEW = 'Review'
 }
 
+// Added Challenge interface to resolve import error in constants.tsx
+export interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  targetDays: number;
+  currentStreak: number;
+  isActive: boolean;
+  isCompleted: boolean;
+}
+
 export type BadgeTier = 'stability' | 'recovery' | 'restraint';
-export type BehaviorType = 'task_complete' | 'task_postpone' | 'zen_mode_enter' | 'use_ai' | 'idle_exit' | 'detox_tasks' | 'app_open';
+export type BehaviorType = 'task_complete' | 'task_postpone' | 'zen_mode_enter' | 'use_ai' | 'idle_exit' | 'detox_tasks' | 'app_open' | 'focus_session_complete';
 
 export interface Habit {
   id: string;
@@ -33,17 +44,16 @@ export interface Habit {
   lastCompletedDate: string;
   createdAt: string;
   description: string;
-  history: Record<string, boolean>;
+  history: Record<string, boolean>; // date string -> completed
 }
 
-export interface Challenge {
+export interface FocusSession {
   id: string;
-  title: string;
-  description: string;
-  targetDays: number;
-  currentStreak: number;
-  isActive: boolean;
-  isCompleted: boolean;
+  taskId?: string;
+  startTime: string;
+  durationMinutes: number;
+  actualSeconds: number;
+  completed: boolean;
 }
 
 export interface Idea {
@@ -78,7 +88,7 @@ export interface Task {
   timeSlot?: 'Morning' | 'Afternoon' | 'Evening';
   time?: string;
   createdAt: string;
-  priorityScore: number;
+  priorityScore: number; // Calculated dynamically
 }
 
 export interface Badge {
@@ -102,6 +112,8 @@ export interface BehaviorEvent {
 export interface AppState {
   tasks: Task[];
   habits: Habit[];
+  focusSessions: FocusSession[];
+  // Added challenges property to resolve state initialization error in AppContext.tsx
   challenges: Challenge[];
   successLogs: any[];
   ideas: Idea[];
