@@ -11,13 +11,14 @@ interface BadgeComponentProps {
 export const BadgeComponent: React.FC<BadgeComponentProps> = ({ badge, size = 64 }) => {
   const IconComponent = (Icons as any)[badge.icon] || Icons.AI;
   
+  // Fixed: Mapping BadgeTier to respective visualization colors
   const tierColors: Record<BadgeTier, string> = {
-    bronze: 'border-[#CD7F32]',
-    silver: 'border-[#C0C0C0]',
-    gold: 'border-[#FFD700]'
+    stability: 'border-[#CD7F32]', // Bronze-like for initial consistency
+    recovery: 'border-[#C0C0C0]',  // Silver-like for resilience
+    restraint: 'border-[#FFD700]'  // Gold-like for advanced wisdom
   };
 
-  const isGold = badge.tier === 'gold';
+  const isGold = badge.tier === 'restraint';
   const radius = (size / 2) - 4;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (badge.progress / 100) * circumference;

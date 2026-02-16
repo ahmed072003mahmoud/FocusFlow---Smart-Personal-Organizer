@@ -4,9 +4,15 @@ import { Task, Category } from '../types';
 
 export const ProductivityDNA: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
   const completed = tasks.filter(t => t.isCompleted);
+  const uncompleted = tasks.filter(t => !t.isCompleted);
   
+  // Success calculation: Are all planned tasks for today done?
+  const isPerfectSymmetry = uncompleted.length === 0 && completed.length > 0;
+
   const dominantColor = useMemo(() => {
-    if (completed.length === 0) return '#cbd5e1';
+    if (completed.length === 0) return '#27272a'; // Zinc-800 for empty
+    if (isPerfectSymmetry) return '#ffffff'; // White for perfection
+    
     const counts = completed.reduce((acc, t) => {
       acc[t.category] = (acc[t.category] || 0) + 1;
       return acc;
@@ -14,28 +20,37 @@ export const ProductivityDNA: React.FC<{ tasks: Task[] }> = ({ tasks }) => {
     const top = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
     
     switch (top) {
-      case Category.STUDY: return '#6366f1'; // indigo
-      case Category.PRAYER: return '#10b981'; // emerald
-      case Category.HABIT: return '#f59e0b'; // amber
-      case Category.WORK: return '#ef4444'; // rose
-      default: return '#64748b';
+      case Category.STUDY: return '#71717a'; 
+      case Category.PRAYER: return '#a1a1aa'; 
+      case Category.HABIT: return '#d4d4d8'; 
+      default: return '#52525b';
     }
-  }, [completed]);
+  }, [completed, isPerfectSymmetry]);
 
   return (
-    <div className="relative flex items-center justify-center w-64 h-64 blob-container">
+    <div className={`relative flex items-center justify-center w-64 h-64 transition-all duration-1000 ${isPerfectSymmetry ? 'scale-110' : 'scale-100'}`}>
+       {/* Ambient Glow */}
        <div 
-         className="absolute inset-0 rounded-full transition-all duration-[4000ms] animate-pulse blur-3xl opacity-20"
+         className="absolute inset-0 rounded-full transition-all duration-[4000ms] animate-pulse blur-[80px] opacity-10"
          style={{ backgroundColor: dominantColor }}
        />
-       <svg viewBox="0 0 200 200" className="w-full h-full relative z-10 drop-shadow-2xl">
+       
+       <svg viewBox="0 0 200 200" className="w-full h-full relative z-10 drop-shadow-2xl overflow-visible">
           <path 
             fill={dominantColor}
-            d="M45.7,-78.3C58.9,-71.4,69.1,-58.5,76.5,-44.6C83.9,-30.7,88.4,-15.3,87.6,-0.5C86.7,14.4,80.5,28.8,72.4,41.4C64.3,54,54.3,64.8,42.2,72.7C30.1,80.6,15.1,85.5,-0.5,86.4C-16,87.3,-32.1,84.1,-46.3,77.5C-60.5,70.9,-72.9,60.8,-80.4,48.2C-87.9,35.5,-90.4,20.3,-89.1,5.6C-87.7,-9.1,-82.4,-23.4,-74.6,-36.2C-66.8,-49,-56.4,-60.3,-43.8,-67.6C-31.1,-74.8,-15.6,-78,0.3,-78.6C16.1,-79.1,32.4,-85.1,45.7,-78.3Z"
+            className={`transition-all duration-[2000ms] ease-in-out ${!isPerfectSymmetry ? 'animate-[morph_15s_infinite_ease-in-out]' : ''}`}
+            d={isPerfectSymmetry 
+              ? "M 100, 100 m -75, 0 a 75,75 0 1,0 150,0 a 75,75 0 1,0 -150,0" // Perfect Circle
+              : "M45.7,-78.3C58.9,-71.4,69.1,-58.5,76.5,-44.6C83.9,-30.7,88.4,-15.3,87.6,-0.5C86.7,14.4,80.5,28.8,72.4,41.4C64.3,54,54.3,64.8,42.2,72.7C30.1,80.6,15.1,85.5,-0.5,86.4C-16,87.3,-32.1,84.1,-46.3,77.5C-60.5,70.9,-72.9,60.8,-80.4,48.2C-87.9,35.5,-90.4,20.3,-89.1,5.6C-87.7,-9.1,-82.4,-23.4,-74.6,-36.2C-66.8,-49,-56.4,-60.3,-43.8,-67.6C-31.1,-74.8,-15.6,-78,0.3,-78.6C16.1,-79.1,32.4,-85.1,45.7,-78.3Z"
+            }
             transform="translate(100 100)"
-            className="animate-[morph_15s_infinite_ease-in-out]"
           />
        </svg>
+
+       {isPerfectSymmetry && (
+         <div className="absolute inset-0 border border-white/5 rounded-full animate-ping pointer-events-none" />
+       )}
+
        <style>{`
          @keyframes morph {
            0%, 100% { d: path("M45.7,-78.3C58.9,-71.4,69.1,-58.5,76.5,-44.6C83.9,-30.7,88.4,-15.3,87.6,-0.5C86.7,14.4,80.5,28.8,72.4,41.4C64.3,54,54.3,64.8,42.2,72.7C30.1,80.6,15.1,85.5,-0.5,86.4C-16,87.3,-32.1,84.1,-46.3,77.5C-60.5,70.9,-72.9,60.8,-80.4,48.2C-87.9,35.5,-90.4,20.3,-89.1,5.6C-87.7,-9.1,-82.4,-23.4,-74.6,-36.2C-66.8,-49,-56.4,-60.3,-43.8,-67.6C-31.1,-74.8,-15.6,-78,0.3,-78.6C16.1,-79.1,32.4,-85.1,45.7,-78.3Z"); }

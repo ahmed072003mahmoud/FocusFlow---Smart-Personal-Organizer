@@ -1,62 +1,58 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useApp } from '../AppContext';
-import { ProductivityDNA } from '../components/ProductivityDNA';
-import { Icons } from '../constants';
+import { BadgeComponent } from '../components/BadgeComponent';
 
 const StatsScreen: React.FC = () => {
-  const { tasks, generateWeeklySummary } = useApp();
-  const [summary, setSummary] = useState('Analyzing behavior...');
-
-  useEffect(() => {
-    generateWeeklySummary().then(setSummary);
-  }, []);
+  const { tasks, badges, behaviorHistory } = useApp();
+  
+  const completedCount = tasks.filter(t => t.isCompleted).length;
+  const activeBadges = badges.filter(b => !b.isLocked);
 
   return (
-    <div className="p-6 space-y-12 pb-32 bg-[#F8F9FA] min-h-screen">
-      <header className="pt-8 text-center">
-        <h1 className="text-3xl font-black text-slate-800 tracking-tight">Your Essence</h1>
-        <p className="text-slate-400 font-bold uppercase tracking-widest text-[8px] mt-2">Behavioral Identity</p>
+    <div className="min-h-screen bg-black p-8 pt-24 pb-40 space-y-16">
+      <header className="space-y-2">
+        <h1 className="text-3xl font-light text-white tracking-tighter">الهوية السلوكية</h1>
+        <p className="text-zinc-600 text-[10px] uppercase tracking-widest font-black">تحليل المسار غير المنحاز</p>
       </header>
 
-      <section className="flex flex-col items-center justify-center py-12 bg-white rounded-[48px] shadow-sm border border-slate-50 space-y-8">
-         <ProductivityDNA tasks={tasks} />
-         <div className="text-center">
-            <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-300">Fluid Pattern</h2>
-            <p className="text-sm font-bold text-slate-800">Growing through balance</p>
-         </div>
+      {/* Behavioral DNA - Abstract Grid */}
+      <section className="grid grid-cols-7 gap-1 h-32">
+        {Array.from({ length: 28 }).map((_, i) => {
+          const hasActivity = behaviorHistory.length > i;
+          return (
+            <div 
+              key={i} 
+              className={`rounded-sm transition-all duration-1000 ${hasActivity ? 'bg-zinc-200' : 'bg-zinc-900'}`} 
+            />
+          );
+        })}
       </section>
 
-      <section className="bg-[#2B3A67] p-8 rounded-[40px] text-white shadow-xl relative overflow-hidden group">
-         <div className="absolute top-0 right-0 p-8 opacity-10"><Icons.AI /></div>
-         <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-300 mb-4">Mentor Summary</h3>
-         <p className="text-lg font-bold leading-relaxed italic">"{summary}"</p>
-      </section>
-
-      <section className="space-y-6">
-         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-300 px-2">Weekly Reflection</h3>
-         <div className="bg-white p-8 rounded-[32px] space-y-8 border border-slate-50 shadow-sm">
-            <div className="space-y-2">
-               <p className="text-xs font-bold text-slate-400 uppercase">Pride</p>
-               <p className="text-sm font-black text-slate-800 italic leading-relaxed">What made you feel most competent this week?</p>
-               <textarea className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm mt-2 focus:ring-0" placeholder="Quietly reflect..." />
+      {/* Identity Badges - Minimalist list */}
+      <section className="space-y-8">
+        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">أوسمة الإتقان</h3>
+        <div className="grid grid-cols-1 gap-4">
+          {badges.map(badge => (
+            <div 
+              key={badge.id} 
+              className={`flex items-center gap-6 p-6 rounded-3xl border transition-all ${badge.isLocked ? 'border-zinc-900 opacity-20' : 'border-white/5 bg-zinc-950'}`}
+            >
+              <span className="text-3xl">{badge.icon}</span>
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-white">{badge.title}</h4>
+                <p className="text-[10px] text-zinc-500 font-medium">{badge.description}</p>
+              </div>
+              {!badge.isLocked && <div className="w-1 h-1 bg-white rounded-full" />}
             </div>
-            <div className="space-y-2">
-               <p className="text-xs font-bold text-slate-400 uppercase">Growth</p>
-               <p className="text-sm font-black text-slate-800 italic leading-relaxed">What task would you approach differently next time?</p>
-            </div>
-         </div>
+          ))}
+        </div>
       </section>
 
-      <section className="space-y-6">
-         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-300 px-2">Time Flow</h3>
-         <div className="flex items-end justify-between px-8 py-10 bg-white rounded-[40px] shadow-sm border border-slate-50 h-48">
-            {[40, 70, 45, 90, 65, 30, 55].map((h, i) => (
-               <div key={i} className="w-4 bg-indigo-100 rounded-full relative group cursor-help">
-                  <div className="absolute bottom-0 w-full bg-indigo-500 rounded-full transition-all duration-1000" style={{ height: `${h}%` }} />
-               </div>
-            ))}
-         </div>
+      <section className="bg-zinc-950 p-8 rounded-[40px] border border-white/5 space-y-4">
+        <p className="text-xs text-zinc-400 leading-relaxed italic">
+          "تم رصد نمط إنجاز صباحي ثابت. قدرتك على الاستعادة بعد الانقطاعات تحسنت بنسبة 14% هذا الشهر."
+        </p>
       </section>
     </div>
   );

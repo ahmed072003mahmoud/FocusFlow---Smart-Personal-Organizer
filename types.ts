@@ -21,28 +21,14 @@ export enum WeekMode {
   REVIEW = 'Review'
 }
 
-// BadgeTier defines the visual rank of a badge
-export type BadgeTier = 'bronze' | 'silver' | 'gold';
+export type BadgeTier = 'stability' | 'recovery' | 'restraint';
 
-export interface Task {
-  id: string;
-  title: string;
-  isCompleted: boolean;
-  category: Category;
-  priority: Priority;
-  estimatedMinutes: number;
-  deadline: string;
-  postponedCount: number;
-  timeSlot?: 'Morning' | 'Afternoon' | 'Evening';
-  time?: string;
-  createdAt: string;
-  priorityScore: number;
-  isWorship?: boolean;
-  isRunning?: boolean;
-  timerStartedAt?: string;
-}
+export type TaskDeferReason = 'low_energy' | 'unclear_task' | 'no_time' | 'procrastination';
 
-// Added Habit interface for tracking ritual streaks
+// Define BehaviorType to match the events tracked by behavior engines
+export type BehaviorType = 'task_complete' | 'task_postpone' | 'zen_mode_enter' | 'use_ai' | 'idle_exit' | 'detox_tasks';
+
+// Habit interface for ritual tracking
 export interface Habit {
   id: string;
   name: string;
@@ -54,7 +40,7 @@ export interface Habit {
   history: Record<string, boolean>;
 }
 
-// Added Challenge interface for gamified milestones
+// Challenge interface for gamification
 export interface Challenge {
   id: string;
   title: string;
@@ -65,21 +51,14 @@ export interface Challenge {
   isCompleted: boolean;
 }
 
-// Added Idea interface for the Brain Dump inbox
+// Idea interface for the brain dump inbox
 export interface Idea {
   id: string;
   text: string;
   capturedAt: string;
 }
 
-// Added SuccessLog interface for tracking high-productivity days
-export interface SuccessLog {
-  id: string;
-  date: string;
-  tasksCompleted: number;
-  secretSauce: string;
-}
-
+// UserPersona interface for behavioral profiling
 export interface UserPersona {
   isMorningPerson: boolean;
   avgCompletionTime: string;
@@ -94,12 +73,20 @@ export interface UserPersona {
   deepWorkHours: number;
 }
 
-export type BehaviorType = 'task_postpone' | 'app_open' | 'task_complete' | 'session_start' | 'update_task_honest' | 'use_ai' | 'daily_completion_check' | 'idle_exit' | 'zen_mode_enter' | 'flow_state_toggle';
-
-export interface BehaviorEvent {
-  type: BehaviorType;
-  timestamp: string;
-  metadata?: any;
+export interface Task {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+  category: Category;
+  priority: Priority;
+  estimatedMinutes: number;
+  deadline: string;
+  postponedCount: number;
+  timeSlot?: 'Morning' | 'Afternoon' | 'Evening';
+  time?: string;
+  createdAt: string;
+  priorityScore: number;
+  deferReason?: TaskDeferReason;
 }
 
 export interface Badge {
@@ -110,38 +97,37 @@ export interface Badge {
   category: string;
   icon: string;
   isLocked: boolean;
-  progress: number;
-  // Metadata for gamification events
   unlockedAt?: string;
+  // Added properties for UI visualization
+  progress: number;
   isJustUnlocked?: boolean;
+}
+
+export interface BehaviorEvent {
+  type: string;
+  timestamp: string;
+  metadata?: any;
 }
 
 export interface AppState {
   tasks: Task[];
   habits: Habit[];
   challenges: Challenge[];
-  successLogs: SuccessLog[];
+  successLogs: any[];
   ideas: Idea[];
   isLoggedIn: boolean;
   hasSeenOnboarding: boolean;
-  isGuest: boolean;
   userName?: string;
-  email?: string;
   isDarkMode: boolean;
-  persona: UserPersona;
   behaviorHistory: BehaviorEvent[];
   badges: Badge[];
-  aiUsageCount: number;
-  isFlowStateActive: boolean;
   isZenModeActive: boolean;
   zenTaskId: string | null;
-  ambientSound: 'none' | 'rain' | 'cafe' | 'white';
-  lastVisitDate?: string;
   currentWeekMode: WeekMode;
-  isSurvivalMode: boolean;
-  activeSoftPrompt?: {
-    id: string;
-    question: string;
-    options: string[];
-  } | null;
+  isComplexityKillSwitchActive: boolean;
+  // State extensions for AI-driven features
+  persona: UserPersona;
+  suggestion?: string;
+  activeSoftPrompt?: { id: string; question: string; options: string[] } | null;
+  lastPromptTime?: string;
 }

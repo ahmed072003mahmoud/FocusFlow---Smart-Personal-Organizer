@@ -5,90 +5,76 @@ import { Icons } from '../constants';
 import { GoogleGenAI } from "@google/genai";
 
 const ContentScreen: React.FC = () => {
-  const { t } = useApp();
+  const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [tips, setTips] = useState<any[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
+  const [results, setResults] = useState<any | null>(null);
 
-  const fetchLiveTips = async () => {
+  const handleSearch = async () => {
+    if (!query.trim()) return;
     setIsSearching(true);
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
+
     try {
+      // REQUIREMENT: Use gemini-3-flash-preview for web search
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: "أعطني أهم 3 تقنيات دراسية أثبتت فعاليتها في عام 2024 بناءً على أحدث الأبحاث العلمية. اذكر المصادر.",
+        contents: `أنا طالب أبحث عن معلومات موثقة حول: "${query}". قدم ملخصاً أكاديمياً دقيقاً.`,
         config: {
           tools: [{ googleSearch: {} }]
         }
       });
 
       const text = response.text || "";
-      const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-      const sources = chunks.filter((c: any) => c.web).map((c: any) => ({
-        uri: c.web.uri,
-        title: c.web.title
-      }));
-
-      const newTip = {
-        id: Date.now(),
-        content: text,
-        sources: sources
-      };
-
-      setTips([newTip, ...tips]);
-      setToast("تم تحديث المعلومات من الويب بنجاح ✨");
+      const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      setResults({ text, sources });
     } catch (e) {
-      console.error(e);
-      setToast("فشل البحث المباشر، يرجى المحاولة لاحقاً.");
+      setResults({ text: "تعذر الوصول للبيانات الحية. تأكد من اتصالك.", sources: [] });
     } finally {
       setIsSearching(false);
-      setTimeout(() => setToast(null), 3000);
     }
   };
 
   return (
-    <div className="p-8 space-y-12 pb-32">
-      <header className="pt-16">
-        <h1 className="text-4xl font-black text-zinc-900 tracking-tight">مختبر المعرفة</h1>
-        <p className="text-zinc-500 mt-2 font-medium">بيانات حية، دراسة أذكى.</p>
+    <div className="p-8 pt-24 space-y-12 pb-40">
+      <header>
+        <h1 className="heading-title text-4xl text-white">مختبر المعرفة</h1>
+        <p className="text-zinc-600 mt-2 font-medium italic">بيانات Google الحية بين يديك.</p>
       </header>
 
-      <button 
-        onClick={fetchLiveTips}
-        disabled={isSearching}
-        className={`w-full py-6 rounded-[32px] border-2 border-dashed flex items-center justify-center gap-4 transition-all ${isSearching ? 'bg-zinc-50 border-zinc-200' : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:border-indigo-400'}`}
-      >
-        {isSearching ? <div className="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" /> : <Icons.AI />}
-        <span className="text-xs font-black uppercase tracking-widest">{isSearching ? "جاري البحث..." : "تحديث المعلومات من الويب"}</span>
-      </button>
+      <div className="space-y-6">
+        <div className="relative">
+          <input 
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            placeholder="ابحث عن مادة، تقنية دراسية، أو حدث..."
+            className="w-full bg-zinc-950 border border-white/5 rounded-full px-10 py-6 text-white font-bold outline-none focus:border-white/20 transition-all"
+          />
+          <button onClick={handleSearch} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 text-zinc-500 hover:text-white">
+            {isSearching ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Icons.AI />}
+          </button>
+        </div>
 
-      <div className="space-y-8">
-        {tips.map((tip) => (
-          <div key={tip.id} className="bg-white border border-zinc-100 p-10 rounded-[48px] shadow-sm animate-in slide-in-from-bottom duration-500">
-            <div className="prose prose-slate max-w-none">
-              <p className="text-zinc-700 leading-relaxed font-medium whitespace-pre-wrap">{tip.content}</p>
-            </div>
+        {results && (
+          <div className="bg-zinc-900 border border-white/5 p-10 rounded-[50px] space-y-8 animate-in zoom-in duration-500">
+            <p className="text-zinc-300 leading-relaxed font-bold whitespace-pre-wrap">{results.text}</p>
             
-            {tip.sources && tip.sources.length > 0 && (
-              <div className="mt-8 pt-8 border-t border-zinc-50 space-y-3">
-                <p className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">المصادر المستخدمة</p>
-                {tip.sources.map((s: any, i: number) => (
-                  <a key={i} href={s.uri} target="_blank" className="block text-xs font-bold text-indigo-500 hover:underline truncate">
-                    {s.title}
-                  </a>
-                ))}
+            {results.sources.length > 0 && (
+              <div className="pt-8 border-t border-white/5">
+                <p className="system-caption text-zinc-600 mb-4">المصادر الموثقة</p>
+                <div className="flex flex-wrap gap-3">
+                  {results.sources.map((s: any, i: number) => s.web && (
+                    <a key={i} href={s.web.uri} target="_blank" rel="noreferrer" className="text-[10px] font-black text-zinc-500 hover:text-white transition-colors bg-zinc-950 px-4 py-2 rounded-full border border-white/5">
+                      {s.web.title}
+                    </a>
+                  ))}
+                </div>
               </div>
             )}
           </div>
-        ))}
+        )}
       </div>
-
-      {toast && (
-        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 bg-zinc-900 text-white px-8 py-4 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl z-[100] animate-in slide-in-from-bottom-6">
-          {toast}
-        </div>
-      )}
     </div>
   );
 };

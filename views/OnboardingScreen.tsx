@@ -1,57 +1,90 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../AppContext';
-import { Logo } from '../components/Logo';
 
 const OnboardingScreen: React.FC = () => {
   const { completeOnboarding, addTask } = useApp();
-  const [firstTask, setFirstTask] = useState('');
+  const [task, setTask] = useState('');
+  const [stage, setStage] = useState<'intro' | 'empty' | 'action' | 'done'>('intro');
 
-  const handleStart = () => {
-    if (firstTask.trim()) {
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setStage('empty'), 2000),
+      setTimeout(() => setStage('action'), 4500),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  const handleFinish = () => {
+    if (task.trim()) {
       addTask({
-        title: firstTask,
+        title: task,
         category: 'Study',
         priority: 'High',
-        estimatedMinutes: 30,
+        estimatedMinutes: 25,
         deadline: new Date().toISOString()
       });
+      setStage('done');
+      setTimeout(completeOnboarding, 1500);
     }
-    completeOnboarding();
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#09090B] px-8 text-center">
-      <div className="w-full max-w-md space-y-16 animate-in fade-in zoom-in duration-1000">
-        <div className="space-y-6">
-          <Logo size={64} className="mx-auto" />
-          <div className="space-y-2">
-            <h1 className="text-4xl font-black text-white tracking-tighter">ابدأ بشيء بسيط</h1>
-            <p className="text-zinc-500 font-medium leading-relaxed">
-              لا نحتاج لتفسيرات. ما هو أهم شيء يدور في ذهنك الآن؟
-            </p>
+    <div className="h-screen w-screen bg-[#000] flex flex-col items-center justify-center p-12 overflow-hidden">
+      {/* Intro Stage: Philosophical Hook */}
+      {stage === 'intro' && (
+        <div className="animate-in fade-in zoom-in duration-1000 text-center space-y-4">
+          <h1 className="text-3xl font-black text-white tracking-tight">التركيز ليس مجهوداً..</h1>
+          <p className="text-zinc-500 font-medium">بل هو مساحة نصنعها.</p>
+        </div>
+      )}
+
+      {/* Empty Stage: Mental Clearance */}
+      {stage === 'empty' && (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000 text-center">
+          <h1 className="text-4xl font-black text-white tracking-tighter">أفرغ ما في رأسك.</h1>
+        </div>
+      )}
+
+      {/* Action Stage: The Zero-Friction Input */}
+      {stage === 'action' && (
+        <div className="w-full max-w-md space-y-16 animate-in fade-in zoom-in duration-1000 text-center">
+          <div className="space-y-4">
+            <span className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.5em]">المهمة الأولى</span>
+            <h2 className="text-3xl font-black text-white tracking-tight">ما هو التحدي الذي يسرق هدوءك الآن؟</h2>
+          </div>
+
+          <div className="relative">
+            <input 
+              autoFocus
+              type="text"
+              value={task}
+              onChange={(e) => setTask(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleFinish()}
+              placeholder="مثلاً: مراجعة فصل الفيزياء..."
+              className="w-full bg-transparent border-b-2 border-zinc-900 focus:border-white py-8 text-2xl font-black text-white text-center outline-none transition-all placeholder:text-zinc-900"
+            />
+            {task && (
+               <button 
+                onClick={handleFinish}
+                className="mt-12 px-12 py-5 bg-white text-black rounded-full font-black text-[10px] uppercase tracking-widest animate-in fade-in slide-in-from-bottom-4"
+               >
+                 التزام بالتنفيذ
+               </button>
+            )}
           </div>
         </div>
+      )}
 
-        <div className="relative w-full group">
-          <input 
-            autoFocus
-            type="text"
-            value={firstTask}
-            onChange={(e) => setFirstTask(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleStart()}
-            placeholder="مثلاً: مراجعة فصل الفيزياء..."
-            className="w-full bg-zinc-900/50 border-b-2 border-zinc-800 focus:border-white py-6 text-xl font-bold text-white text-center outline-none transition-all placeholder:text-zinc-800"
-          />
+      {/* Done Stage: Positive Reinforcement */}
+      {stage === 'done' && (
+        <div className="animate-in zoom-in duration-700 text-center space-y-6">
+           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto shadow-[0_0_50px_white/20]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+           </div>
+           <h2 className="text-2xl font-black text-white">تم الوعد. لنبدأ.</h2>
         </div>
-
-        <button 
-          onClick={handleStart}
-          className="w-full py-5 bg-white text-black font-black rounded-[25px] shadow-2xl uppercase tracking-[0.2em] text-xs hover:scale-[1.02] active:scale-95 transition-all"
-        >
-          أدخل وضع التدفق (Flow)
-        </button>
-      </div>
+      )}
     </div>
   );
 };

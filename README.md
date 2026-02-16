@@ -1,30 +1,18 @@
 
-# 🧬 FocusFlow by Nexus Studio
+# 🧬 FocusFlow: Ethical Design Manifesto
 
-> "Innovation is discovery of why the current wheel doesn't turn fast enough."
+## 1. Anti-Features (What we refuse to build)
+- **No Streaks**: We reject the "broken streak" guilt. Consistency is measured by quality, not consecutive days.
+- **No Social Comparison**: Your productivity is private. No leaderboards or competitive ranking.
+- **No "Overdue" Red**: Tasks are never "late"; they are simply "unmet expectations" that need rescheduling.
+- **No Tutorial Overload**: Complexity is revealed only when the user's behavior signals readiness.
 
-FocusFlow is a **Deep Intelligence Personal Organizer** for students. It moves beyond simple task management into the realm of **Psychological Load Balancing**.
+## 2. Ethical Notification Logic
+- **Forbidden Hours**: No notifications between 10 PM and 7 AM unless explicitly requested for "Night Owl" mode.
+- **Silence over Noise**: If the user is in "Zen Mode," all system interruptions are physically blocked.
+- **Contextual Reminders**: Notifications adapt to energy levels. If the user is "Tired," the app suggests rest instead of a task.
 
-## 💎 Core Philosophy
-1. **Zen First**: High-friction modes to protect the most valuable asset: Attention.
-2. **Behavioral DNA**: Productivity is a living, breathing shape, not a bar chart.
-3. **AI Mentor**: Gemini Pro thinking to simulate an academic strategist.
-
-## 🛠 Tech Stack
-- **Engine**: React 19 + TypeScript (Strict Interfaces)
-- **Intelligence**: Gemini API (Flash/Pro)
-- **Persistence**: LocalStorage with Cloud Sync readiness
-- **Design**: Nexus Glassmorphism + Tailwind CSS
-
-## 📁 Structure
-- `/hooks`: Behavioral logic abstraction (`useBehaviorEngine`)
-- `/utils`: Heavy logic engines (`Gamification`, `Insight`, `SmartParser`)
-- `/components`: Atomized UI elements (`TaskCard`, `DNA`, `Zen`)
-
-## 🚀 Installation
-1. Clone repository.
-2. Inject `API_KEY` into environment.
-3. `npm install && npm start`.
-
----
-*Developed for elite student performance.*
+## 3. Design Success Metrics (Non-Vanity)
+- **Friction to Action Ratio**: How many seconds between opening the app and starting a Zen Session? (Target: < 5s).
+- **Recovery Rate**: How quickly does a user return after a 2-day break without feeling overwhelmed?
+- **Cognitive Load Balance**: Percentage of sessions spent in "Flow" vs. "Organizing."

@@ -1,5 +1,5 @@
 
-import React, { Component, useState, useEffect, Suspense, lazy, ReactNode } from 'react';
+import React, { useState, useEffect, Suspense, lazy, ReactNode, Component } from 'react';
 import { useApp, AppProvider } from './AppContext';
 import SplashScreen from './views/SplashScreen';
 import LoginScreen from './views/LoginScreen';
@@ -19,7 +19,7 @@ const Habits = lazy(() => import('./views/HabitsScreen'));
 interface EBProps { children?: ReactNode; }
 interface EBState { hasError: boolean; }
 
-// Fixed: Inheriting directly from Component to ensure 'this.props' and 'this.state' are correctly recognized by TypeScript.
+// Fixed: Inheriting from Component<EBProps, EBState> ensures this.props is correctly typed
 class ErrorBoundary extends Component<EBProps, EBState> {
   public state: EBState = { hasError: false };
 
@@ -30,13 +30,12 @@ class ErrorBoundary extends Component<EBProps, EBState> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="h-screen flex flex-col items-center justify-center p-12 text-center bg-[#09090B]">
-          <h2 className="text-xl font-black text-zinc-100">نحتاج لهدوء</h2>
-          <button onClick={() => window.location.reload()} className="mt-8 px-8 py-3 bg-zinc-100 text-zinc-900 rounded-2xl font-black text-[10px] uppercase">إعادة المحاولة</button>
+        <div className="h-screen flex flex-col items-center justify-center p-12 text-center bg-[#000]">
+          <h2 className="heading-title text-xl text-white">نحتاج لهدوء</h2>
+          <button onClick={() => window.location.reload()} className="mt-8 px-8 py-3 bg-white text-black rounded-full system-caption text-[8px]">إعادة المحاولة</button>
         </div>
       );
     }
-    // Correctly return children from props
     return this.props.children;
   }
 }
@@ -44,16 +43,16 @@ class ErrorBoundary extends Component<EBProps, EBState> {
 const NavigationDock = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isZenModeActive, isFlowStateActive } = useApp();
+  const { isZenModeActive, isFlowStateActive, isFeatureUnlocked } = useApp() as any;
 
   if (isZenModeActive || isFlowStateActive) return null;
 
   const navItems = [
-    { path: '/', icon: <Icons.Home /> },
-    { path: '/plan', icon: <Icons.AI /> },
-    { path: '/capture', icon: <Icons.Inbox /> },
-    { path: '/habits', icon: <Icons.Flame /> },
-    { path: '/stats', icon: <Icons.Stats /> },
+    { path: '/', icon: <Icons.Home />, unlocked: true },
+    { path: '/plan', icon: <Icons.AI />, unlocked: isFeatureUnlocked('ai_lab') },
+    { path: '/capture', icon: <Icons.Inbox />, unlocked: true },
+    { path: '/habits', icon: <Icons.Flame />, unlocked: true },
+    { path: '/stats', icon: <Icons.Stats />, unlocked: isFeatureUnlocked('dna_stats') },
   ];
 
   return (
@@ -64,10 +63,10 @@ const NavigationDock = () => {
           <button
             key={item.path}
             onClick={() => navigate(item.path)}
-            className={`transition-all duration-500 relative ${isActive ? 'text-zinc-100 scale-125' : 'text-zinc-700 hover:text-zinc-500'}`}
+            className={`transition-all duration-500 relative ${isActive ? 'text-white scale-125' : 'text-zinc-800 hover:text-zinc-600'} ${!item.unlocked && 'opacity-20 grayscale'}`}
           >
             {item.icon}
-            {isActive && <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-1 h-1 bg-zinc-100 rounded-full shadow-[0_0_10px_white]" />}
+            {isActive && <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full shadow-[0_0_10px_white]" />}
           </button>
         );
       })}
@@ -89,7 +88,7 @@ const AppContent: React.FC = () => {
   if (!hasSeenOnboarding) return <OnboardingScreen />;
 
   return (
-    <div className="min-h-screen transition-colors duration-500 bg-[#09090B]">
+    <div className="min-h-screen transition-colors duration-500 bg-[#000]">
       <ZenMode />
       <AmbientSoundPlayer />
       <main className={`${isZenModeActive ? 'hidden' : 'pb-40'}`}>
